@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>De Romanis Vocab Tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================ THEME ============================ */
+:root, html[data-theme="light"]{
+  --bg:#ece4d1; --bg-2:#e3d9c1;
+  --surface:#f5efe0; --surface-2:#efe7d3;
+  --ink:#221c12; --muted:#776b54; --faint:#a89a7e;
+  --line:rgba(40,31,16,.14); --rule:rgba(40,31,16,.34);
+  --accent:#8a2b20; --accent-deep:#6f2017; --accent-soft:#a8483b;
+  --gold:#937327; --gold-soft:#b18f37;
+  --good:#3f6b3a; --good-bg:rgba(63,107,58,.12);
+  --bad:#9c2f25;  --bad-bg:rgba(156,47,37,.10);
+  --warn:#946616; --warn-bg:rgba(148,102,22,.12); --warn-line:rgba(148,102,22,.42);
+  --paper-on-accent:#f5efe0;
+  --shadow:0 22px 44px -28px rgba(50,33,10,.5);
+  --glass:rgba(245,239,224,.74); --glass-2:rgba(239,231,211,.7);
+}
+html[data-theme="dark"]{
+  --bg:#15110b; --bg-2:#0e0b07;
+  --surface:#1d1810; --surface-2:#241e15;
+  --ink:#ece1cb; --muted:#9c8e74; --faint:#6e6450;
+  --line:rgba(236,225,203,.13); --rule:rgba(236,225,203,.28);
+  --accent:#c5594a; --accent-deep:#a8402f; --accent-soft:#d4705f;
+  --gold:#c8a44e; --gold-soft:#dcb863;
+  --good:#5e9e57; --good-bg:rgba(94,158,87,.16);
+  --bad:#cf5d4e;  --bad-bg:rgba(207,93,78,.14);
+  --warn:#cd9a3e; --warn-bg:rgba(205,154,62,.14); --warn-line:rgba(205,154,62,.45);
+  --paper-on-accent:#1a140d;
+  --shadow:0 26px 52px -30px rgba(0,0,0,.72);
+  --glass:rgba(29,24,16,.66); --glass-2:rgba(36,30,21,.62);
+}
+
+:root{--ease:cubic-bezier(.22,.61,.36,1);--ease-soft:cubic-bezier(.4,0,.2,1);}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Spectral',Georgia,'Times New Roman',serif;
+  font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  min-height:100vh; position:relative;
+  transition:background-color .5s var(--ease-soft), color .5s var(--ease-soft);
+}
+/* smooth theme cross-fade on the main surfaces */
+.app-header,.panel,.qcard,.stage-card,.big-stat,.btn,.chip,.icon-btn,select,input,.mc-opt,.flash-face,.toast,.tab{
+  transition-property:background-color,color,border-color,box-shadow,transform;
+  transition-duration:.4s; transition-timing-function:var(--ease-soft);
+}
+
+/* ====================== FLOWING LIQUID BACKGROUND ====================== */
+#bgflow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.blob{position:absolute;width:50vmax;height:50vmax;filter:blur(54px);
+  will-change:transform;transform:translateZ(0);backface-visibility:hidden;
+  border-radius:46% 54% 60% 40% / 44% 48% 52% 56%;}
+html[data-theme="light"] .blob{opacity:.6;}
+html[data-theme="dark"]  .blob{opacity:.5;}
+.b1{--r:14vmax;top:-2%; left:4%;  border-radius:58% 42% 45% 55%/52% 56% 44% 48%;background:radial-gradient(circle,var(--accent-soft) 0%,transparent 66%);animation:orbit 26s linear infinite;}
+.b2{--r:17vmax;top:46%; left:58%; border-radius:40% 60% 56% 44%/60% 42% 58% 40%;background:radial-gradient(circle,var(--gold-soft) 0%,transparent 66%);animation:orbit 34s linear infinite reverse;}
+.b3{--r:13vmax;top:58%; left:8%;  border-radius:52% 48% 38% 62%/46% 60% 40% 54%;background:radial-gradient(circle,var(--accent) 0%,transparent 68%);animation:orbit 30s linear infinite;}
+.b4{--r:16vmax;top:14%; left:66%; border-radius:44% 56% 62% 38%/54% 44% 56% 46%;background:radial-gradient(circle,var(--accent-soft) 0%,transparent 66%);animation:orbit 40s linear infinite reverse;}
+/* perpetual circular drift — transform only, fully GPU-composited */
+@keyframes orbit{
+  from{transform:translateZ(0) rotate(0deg) translateX(var(--r)) rotate(0deg);}
+  to  {transform:translateZ(0) rotate(360deg) translateX(var(--r)) rotate(-360deg);}
+}
+
+/* ====================== TOP PROGRESS LINE ====================== */
+#topprog{position:fixed;top:0;left:0;right:0;height:3px;z-index:100;pointer-events:none;
+  background:var(--line);opacity:0;transition:opacity .35s var(--ease-soft);}
+#topprog.on{opacity:1;}
+#topprog > i{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--accent-deep),var(--accent),var(--gold-soft));
+  box-shadow:0 0 10px var(--accent);transition:width .45s var(--ease);}
+
+/* paper atmosphere */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(130% 90% at 50% -15%, var(--surface), transparent 58%),
+    radial-gradient(110% 80% at 50% 118%, var(--bg-2), transparent 55%);
+  opacity:.7;
+}
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.05; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+html[data-theme="dark"] body::after{mix-blend-mode:screen; opacity:.045;}
+
+h1,h2,h3,.serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:.01em;}
+
+/* translucent surfaces — the pre-blurred background shows through without
+   any per-frame backdrop blur (keeps scrolling and animation fast) */
+.app-header{background:var(--glass)!important;}
+.panel,.qcard,.big-stat,.stage-card,.mc-opt,.flash-face,.toast,.weak-list li,.preview-ch{background:var(--glass);}
+.stage-grid,.stat-cards,.weak-list,.mc-grid{background:var(--line);}
+.stage-card:hover,.stage-card.selected,.mc-opt:hover:not(:disabled){background:var(--glass-2);}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px;}
+.muted{color:var(--muted);}
+em{font-style:italic;}
+
+/* small-caps editorial label */
+.label,.ch-label,.opt-group label,.qprompt-label,.stat .l,.big-stat .lab{
+  font-family:'Spectral',serif; font-weight:600; font-size:.68rem;
+  letter-spacing:.24em; text-transform:uppercase; color:var(--muted);
+}
+
+/* ============================ KEYFRAMES ============================ */
+@keyframes shake{0%,100%{transform:translateX(0);}15%{transform:translateX(-7px);}30%{transform:translateX(7px);}45%{transform:translateX(-5px);}60%{transform:translateX(5px);}75%{transform:translateX(-3px);}90%{transform:translateX(3px);}}
+@keyframes correctPulse{0%{transform:scale(1);}45%{transform:scale(1.03);}100%{transform:scale(1);}}
+@keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.shake{animation:shake .42s var(--ease-soft);}
+.correct-pulse{animation:correctPulse .42s var(--ease);}
+.feedback-banner{animation:rise .32s var(--ease) both;}
+
+/* ============================ HEADER ============================ */
+.app-header{
+  position:sticky; top:0; z-index:40;
+  background:var(--surface);
+  border-bottom:1px solid var(--rule);
+}
+.header-inner{
+  max-width:1040px; margin:0 auto; padding:18px 28px;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:16px;flex:1;min-width:240px;}
+.brand h1{font-size:1.85rem;margin:0;color:var(--ink);line-height:1;font-weight:700;}
+.brand h1 .of{font-style:italic;font-weight:500;color:var(--accent);}
+.brand .sub{font-size:.64rem;color:var(--muted);letter-spacing:.34em;text-transform:uppercase;margin-top:3px;}
+.laurel{width:46px;height:46px;flex:none;color:var(--accent);}
+.header-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;font-size:.82rem;font-weight:600;
+  background:transparent;border:1px solid var(--line);color:var(--ink);
+  padding:7px 14px;border-radius:2px;cursor:pointer;font-family:'Spectral',serif;
+  letter-spacing:.02em;transition:border-color .15s,background .15s;
+}
+.chip.badge-weak{border-color:var(--accent);color:var(--accent);}
+.icon-btn{
+  background:transparent;border:1px solid var(--line);color:var(--ink);
+  width:38px;height:38px;border-radius:2px;cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s;
+}
+.icon-btn:hover,.chip:hover{border-color:var(--ink);background:var(--surface-2);}
+.meander{height:3px;width:100%;background:var(--accent);}
+
+main{max-width:1040px;margin:0 auto;padding:38px 28px 90px;position:relative;z-index:1;}
+.view{display:none;}
+.view.active{display:block;animation:rise .42s var(--ease) both;}
+
+.section-title{font-size:2.45rem;margin:.1em 0 .12em;color:var(--ink);font-weight:600;line-height:1.05;}
+.lead{color:var(--muted);margin:0 0 30px;max-width:62ch;font-size:1.02rem;}
+.lead em{color:var(--ink);font-style:italic;}
+
+/* ============================ BUTTONS ============================ */
+.btn{
+  font-family:'Spectral',serif;border:1px solid var(--rule);background:transparent;color:var(--ink);
+  padding:10px 18px;border-radius:2px;cursor:pointer;font-size:.92rem;font-weight:600;letter-spacing:.02em;
+  transition:transform .08s ease,border-color .15s,background .15s,color .15s;
+}
+.btn:hover:not(:disabled){border-color:var(--ink);background:var(--surface-2);}
+.btn:active:not(:disabled){transform:translateY(1px);}
+.btn:disabled{opacity:.38;cursor:not-allowed;}
+.btn.primary{background:var(--accent);color:var(--paper-on-accent);border-color:var(--accent-deep);}
+.btn.primary:hover:not(:disabled){background:var(--accent-deep);color:var(--paper-on-accent);}
+.btn.ghost{border-color:transparent;}
+.btn.ghost:hover:not(:disabled){border-color:var(--line);}
+.btn.amber{background:transparent;border-color:var(--gold);color:var(--gold);}
+.btn.amber:hover:not(:disabled){background:var(--gold);color:var(--paper-on-accent);}
+.btn.lg{padding:13px 26px;font-size:1rem;}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+
+/* ============================ STAGE CARDS ============================ */
+.stage-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:8px 0 22px;
+  background:var(--line);border:1px solid var(--line);}
+.stage-card{
+  background:var(--surface);border:0;padding:18px 18px 16px;cursor:pointer;position:relative;text-align:left;
+  transition:background .3s var(--ease-soft), transform .3s var(--ease), box-shadow .3s var(--ease-soft);
+}
+.stage-card:hover{background:var(--surface-2);transform:translateY(-3px);box-shadow:var(--shadow);}
+.stage-card.selected{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent);}
+.stage-card.selected:hover{box-shadow:inset 3px 0 0 var(--accent),var(--shadow);}
+.stage-card .ch-num{font-family:'Cormorant Garamond',serif;font-size:2.5rem;color:var(--accent);line-height:.9;font-weight:600;}
+.stage-card .ch-label{margin-bottom:6px;}
+.stage-card .ch-count{font-weight:600;font-size:1rem;margin-top:6px;}
+.stage-card .ch-break{font-size:.8rem;color:var(--muted);margin-top:3px;}
+.stage-card .tick{position:absolute;top:14px;right:14px;width:20px;height:20px;border-radius:50%;
+  border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:.72rem;color:transparent;}
+.stage-card.selected .tick{background:var(--accent);border-color:var(--accent);color:var(--paper-on-accent);}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:22px 24px;margin:18px 0;}
+.summary-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 20px;}
+.total-pill{font-size:1.02rem;color:var(--muted);}
+.total-pill b{color:var(--accent);font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:600;}
+
+/* options */
+.opt-row{display:flex;flex-wrap:wrap;gap:26px;}
+.opt-group{display:flex;flex-direction:column;gap:7px;}
+.opt-group label{margin-bottom:1px;}
+select,input[type=text]{
+  background:var(--bg);color:var(--ink);border:1px solid var(--rule);border-radius:2px;
+  padding:10px 13px;font-size:.97rem;font-family:'Spectral',serif;
+}
+select:focus,input:focus{outline:none;border-color:var(--accent);}
+
+/* smart-marking switch */
+.switch{display:flex;align-items:center;gap:9px;cursor:pointer;font-family:'Spectral',serif;font-size:.95rem;color:var(--ink);padding:9px 0;}
+.switch input{position:absolute;opacity:0;width:0;height:0;}
+.switch span{position:relative;padding-left:48px;line-height:1.2;}
+.switch span::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:38px;height:20px;border-radius:99px;border:1px solid var(--rule);background:var(--bg);transition:background .18s,border-color .18s;}
+.switch span::after{content:"";position:absolute;left:3px;top:50%;transform:translateY(-50%);width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .18s,background .18s;}
+.switch input:checked + span::before{background:var(--accent);border-color:var(--accent-deep);}
+.switch input:checked + span::after{transform:translate(18px,-50%);background:var(--paper-on-accent);}
+.switch input:focus + span::before{box-shadow:0 0 0 2px var(--accent-soft);}
+
+/* AI thinking shimmer */
+.thinking{display:inline-flex;align-items:center;gap:8px;}
+.thinking .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.4;animation:think 1s infinite ease-in-out;}
+.thinking .dot:nth-child(2){animation-delay:.18s;}
+.thinking .dot:nth-child(3){animation-delay:.36s;}
+@keyframes think{0%,80%,100%{opacity:.25;transform:translateY(0);}40%{opacity:1;transform:translateY(-3px);}}
+.banner.ai{background:var(--surface-2);border-left:3px solid var(--gold);color:var(--muted);}
+.banner .ai-tag{font-family:'Spectral',serif;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-right:8px;}
+
+/* home study preview (scrollable) */
+.preview-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+.preview-scroll{max-height:340px;overflow-y:auto;border-top:1px solid var(--line);
+  scrollbar-width:thin;scrollbar-color:var(--rule) transparent;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);
+          mask-image:linear-gradient(180deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);}
+.preview-scroll::-webkit-scrollbar{width:9px;}
+.preview-scroll::-webkit-scrollbar-track{background:transparent;}
+.preview-scroll::-webkit-scrollbar-thumb{background:var(--rule);border-radius:99px;border:3px solid var(--surface);}
+.preview-ch{font-family:'Spectral',serif;font-weight:600;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);padding:14px 4px 6px;position:sticky;top:0;background:var(--surface);z-index:1;
+  border-bottom:1px solid var(--line);}
+.preview-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:baseline;padding:7px 4px;border-bottom:1px solid var(--line);}
+.preview-row:hover{background:var(--surface-2);}
+.preview-lat{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.22rem;color:var(--ink);line-height:1.15;}
+.preview-lat .pv-info{display:block;font-family:'Spectral',serif;font-weight:400;font-size:.72rem;font-style:italic;color:var(--faint);}
+.preview-eng{font-style:italic;color:var(--muted);font-size:.95rem;}
+.preview-row.starred .preview-lat{color:var(--accent);}
+.preview-row.starred .preview-lat::after{content:"★";font-size:.7rem;color:var(--gold);margin-left:6px;vertical-align:middle;}
+
+/* word of day */
+.wotd{display:flex;gap:8px 22px;align-items:baseline;flex-wrap:wrap;border-left:3px solid var(--accent);}
+.wotd .lat{font-family:'Cormorant Garamond',serif;font-size:2.1rem;color:var(--accent);font-weight:600;line-height:1;}
+.wotd .eng{color:var(--ink);font-style:italic;font-size:1.1rem;}
+.wotd .info{color:var(--muted);font-size:.9rem;font-style:italic;}
+
+/* missed / weak list */
+.weak-list{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--line);border:1px solid var(--line);}
+.weak-list li{display:flex;justify-content:space-between;gap:10px;background:var(--surface);padding:10px 14px;font-size:.92rem;}
+.weak-list .wl-lat{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.15rem;color:var(--accent);}
+.weak-list .wl-eng{color:var(--muted);font-style:italic;}
+.weak-list .wl-miss{color:var(--gold);font-weight:600;white-space:nowrap;}
+.tag-ch{font-size:.66rem;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:1px 6px;letter-spacing:.08em;text-transform:uppercase;}
+
+/* ============================ STUDY GUIDE ============================ */
+.tabs{display:flex;gap:0;flex-wrap:wrap;margin:4px 0 18px;border-bottom:1px solid var(--line);}
+.tab{padding:9px 2px;margin-right:28px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;
+  color:var(--muted);cursor:pointer;font-size:.92rem;font-weight:600;font-family:'Spectral',serif;letter-spacing:.03em;
+  transition:color .15s,border-color .15s;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);border-color:var(--accent);}
+.study-search{width:100%;max-width:360px;margin-bottom:16px;}
+.ch-heading{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:30px 0 8px;
+  border-bottom:1px solid var(--rule);padding-bottom:7px;font-size:1.5rem;font-weight:600;
+  display:flex;align-items:baseline;gap:10px;}
+table.study{width:100%;border-collapse:collapse;}
+table.study td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+table.study .lat{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.32rem;color:var(--ink);}
+table.study .info{color:var(--muted);font-size:.84rem;font-style:italic;margin-top:1px;}
+table.study .type-tag{display:inline-block;font-size:.6rem;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--accent);border:0;border-left:1px solid var(--rule);padding:0 0 0 9px;margin-left:9px;vertical-align:middle;}
+table.study .eng-col{text-align:left;font-style:italic;color:var(--ink);}
+.star{cursor:pointer;font-size:1.15rem;color:var(--faint);background:none;border:none;width:32px;line-height:1;}
+.star.on{color:var(--gold);}
+
+/* ============================ QUIZ ============================ */
+.quiz-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.stats{display:flex;gap:30px;flex-wrap:wrap;align-items:flex-end;}
+.stat{display:flex;flex-direction:column;line-height:1.05;gap:3px;}
+.stat .v{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--ink);font-weight:600;}
+.streak .v{color:var(--accent);}
+.progress{height:2px;background:var(--line);overflow:hidden;margin-bottom:26px;}
+.progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s;}
+
+.qcard{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--accent);
+  border-radius:0 0 3px 3px;padding:46px 40px;box-shadow:var(--shadow);}
+.qprompt-label{margin-bottom:14px;}
+.qword{font-family:'Cormorant Garamond',serif;font-size:4rem;color:var(--accent);line-height:1.02;margin-bottom:6px;
+  word-break:break-word;font-weight:600;letter-spacing:.004em;}
+.qinfo{color:var(--muted);font-size:1.02rem;font-style:italic;margin-bottom:4px;}
+.qattempt{font-size:.78rem;color:var(--gold);font-weight:600;letter-spacing:.14em;text-transform:uppercase;min-height:1.1em;margin-top:6px;}
+
+.answer-wrap{margin-top:26px;}
+input.answer{width:100%;font-family:'Cormorant Garamond',serif;font-size:1.7rem;padding:14px 18px;border-radius:2px;text-align:center;}
+input.answer.wrong{border-color:var(--bad);background:var(--bad-bg);}
+input.answer.right{border-color:var(--good);background:var(--good-bg);}
+
+.mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:8px;background:var(--line);border:1px solid var(--line);}
+.mc-opt{text-align:left;padding:17px 20px;font-size:1.15rem;border:0;border-radius:0;background:var(--surface);color:var(--ink);
+  cursor:pointer;transition:background .12s,box-shadow .12s;display:flex;gap:13px;align-items:center;
+  font-family:'Cormorant Garamond',serif;font-weight:600;}
+.mc-opt .key{font-family:'Spectral',serif;font-size:.74rem;font-weight:600;color:var(--muted);border:1px solid var(--rule);
+  border-radius:2px;padding:1px 7px;min-width:22px;text-align:center;}
+.mc-opt:hover:not(:disabled){background:var(--surface-2);}
+.mc-opt.focus{box-shadow:inset 0 0 0 2px var(--accent);}
+.mc-opt.right{background:var(--good-bg);box-shadow:inset 3px 0 0 var(--good);}
+.mc-opt.wrong{background:var(--bad-bg);box-shadow:inset 3px 0 0 var(--bad);}
+.mc-opt.dimmed{opacity:.42;}
+
+.flash{perspective:1200px;margin-top:8px;cursor:pointer;}
+.flash-inner{position:relative;min-height:200px;transition:transform .6s var(--ease);transform-style:preserve-3d;}
+.flash.flipped .flash-inner{transform:rotateY(180deg);}
+.flash-face{position:absolute;inset:0;backface-visibility:hidden;border:1px solid var(--rule);border-radius:3px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg);text-align:center;}
+.flash-face.back{transform:rotateY(180deg);}
+.flash-face .big{font-family:'Cormorant Garamond',serif;font-size:2.6rem;color:var(--accent);font-weight:600;}
+.flash-face .small{color:var(--muted);margin-top:8px;font-style:italic;}
+.flash-hint{text-align:center;color:var(--muted);font-size:.86rem;font-style:italic;margin-top:12px;}
+
+.banner{margin-top:22px;padding:14px 18px;border-radius:2px;font-weight:500;display:none;font-size:1rem;}
+.banner.show{display:block;}
+.banner b{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:600;}
+.banner.ok{background:var(--good-bg);border-left:3px solid var(--good);color:var(--good);}
+.banner.bad{background:var(--bad-bg);border-left:3px solid var(--bad);color:var(--bad);}
+.banner.hint{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn);}
+
+.controls{display:flex;justify-content:space-between;gap:12px;margin-top:24px;flex-wrap:wrap;}
+.controls .left{display:flex;gap:10px;flex-wrap:wrap;}
+.timer-ring{font-family:'Cormorant Garamond',serif;font-weight:600;color:var(--ink);}
+.timer-ring.low{color:var(--bad);}
+
+/* ============================ SUMMARY / BANK ============================ */
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:6px 0 24px;background:var(--line);border:1px solid var(--line);}
+.big-stat{background:var(--surface);padding:22px 18px;text-align:center;}
+.big-stat .n{font-family:'Cormorant Garamond',serif;font-size:2.4rem;color:var(--accent);font-weight:600;line-height:1;}
+.big-stat .lab{margin-top:8px;}
+
+table.report{width:100%;border-collapse:collapse;margin-top:8px;}
+table.report th{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);cursor:pointer;
+  font-family:'Spectral',serif;font-weight:600;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+table.report td{padding:11px 12px;border-bottom:1px solid var(--line);}
+table.report td b{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:600;}
+table.report tr.needs td{background:var(--warn-bg);}
+.pill{display:inline-block;font-size:.66rem;font-weight:600;padding:2px 9px;border-radius:2px;letter-spacing:.08em;text-transform:uppercase;}
+.pill.np{background:transparent;border:1px solid var(--warn-line);color:var(--warn);}
+.pill.ok{background:transparent;border:1px solid var(--good);color:var(--good);}
+.pill.no{background:transparent;border:1px solid var(--bad);color:var(--bad);}
+
+.view#view-mistakes .qcard,.amber-theme{border-top-color:var(--gold)!important;}
+.amber-skin .section-title{color:var(--ink);}
+.amber-skin .qword{color:var(--gold);}
+
+.celebrate{text-align:center;padding:54px 20px;}
+.celebrate .laurel{width:84px;height:84px;margin:0 auto 14px;color:var(--accent);}
+.celebrate h2{font-size:2.6rem;color:var(--accent);font-weight:600;margin:0 0 6px;}
+
+.toast-wrap{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.toast{background:var(--surface);border:1px solid var(--rule);color:var(--ink);padding:12px 20px;border-radius:2px;
+  box-shadow:var(--shadow);font-weight:500;animation:toastIn .3s ease;font-size:.95rem;}
+.toast b{font-family:'Cormorant Garamond',serif;font-size:1.1rem;}
+.toast.master{border-color:var(--accent);border-left-width:3px;}
+
+.empty{color:var(--muted);padding:22px;text-align:center;font-style:italic;}
+
+#watermark{position:fixed;right:12px;bottom:10px;z-index:60;pointer-events:none;
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.82rem;letter-spacing:.04em;
+  color:var(--muted);opacity:.55;}
+@media print{#watermark{display:none;}}
+footer{max-width:1040px;margin:0 auto;padding:26px 28px;color:var(--faint);font-size:.78rem;text-align:center;
+  border-top:1px solid var(--line);letter-spacing:.04em;}
+
+/* responsive */
+@media(max-width:860px){
+  .stage-grid{grid-template-columns:repeat(2,1fr);}
+  .stat-cards{grid-template-columns:repeat(2,1fr);}
+  .weak-list{grid-template-columns:1fr;}
+  .qword{font-size:2.9rem;}
+  .qcard{padding:34px 24px;}
+  .mc-grid{grid-template-columns:1fr;}
+  .section-title{font-size:2rem;}
+}
+
+/* print */
+@media print{
+  body{background:#fff;color:#000;}
+  body::before,body::after,#bgflow{display:none!important;}
+  .app-header,.tabs,.study-search,.btn,.icon-btn,.chip,footer,.meander{display:none!important;}
+  .view{display:none!important;}
+  #view-study{display:block!important;}
+  table.study td{border-color:#ccc;}
+  .star{display:none;}
+  table.study .type-tag{color:#555;border-color:#aaa;}
+  .ch-heading{color:#000;border-color:#999;}
+  table.study .lat,.eng-col{color:#000;}
+}
+
+/* respect users who prefer less motion (but keep the gentle ambient flow) */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.05s!important;scroll-behavior:auto!important;}
+  .blob{animation:orbit 60s linear infinite!important;}
+}
+</style>
+</head>
+<body>
+
+<div id="topprog" aria-hidden="true"><i></i></div>
+
+<div id="bgflow" aria-hidden="true">
+  <span class="blob b1"></span>
+  <span class="blob b2"></span>
+  <span class="blob b3"></span>
+  <span class="blob b4"></span>
+</div>
+
+<!-- ===================== RAW WORD DATA ===================== -->
+<script type="text/plain" id="rawdata">
+amo|amare, amavi, amatum|love, like|1|verb
+dea|deae, f|goddess|1|noun
+deus|dei, m|god|1|noun
+et||and, even|1|conjunction
+etiam||also, even|1|adverb
+femina|feminae, f|woman|1|noun
+filia|filiae, f|daughter|1|noun
+filius|filii, m|son|1|noun
+homo|hominis, m|man, human being|1|noun
+iratus|irata, iratum|angry|1|adjective
+lacrimo|lacrimare, lacrimavi, lacrimatum|weep, cry|1|verb
+laetus|laeta, laetum|happy|1|adjective
+laudo|laudare, laudavi, laudatum|praise|1|verb
+liberi|liberorum, m pl|children|1|noun
+mater|matris, f|mother|1|noun
+multus|multa, multum|much, many|1|adjective
+pater|patris, m|father|1|noun
+pulcher|pulchra, pulchrum|beautiful, handsome|1|adjective
+punio|punire, punivi, punitum|punish|1|verb
+regina|reginae, f|queen|1|noun
+rego|regere, rexi, rectum|rule|1|verb
+rex|regis, m|king|1|noun
+Romanus|Romana, Romanum|Roman|1|adjective
+saepe||often|1|adverb
+saevus|saeva, saevum|savage, cruel|1|adjective
+sed||but|1|conjunction
+sum|esse, fui|be|1|verb
+terreo|terrere, terrui, territum|frighten, terrify|1|verb
+tum||then|1|adverb
+uxor|uxoris, f|wife|1|noun
+ad|(+accusative)|to, towards, at|2|preposition
+arma|armorum, n pl|arms, weapons|2|noun
+audax|audacis|bold, daring|2|adjective
+bellum|belli, n|war|2|noun
+capio|capere, cepi, captum|take, catch, capture, make (a plan)|2|verb
+contra|(+accusative)|against|2|preposition
+corpus|corporis, n|body|2|noun
+curro|currere, cucurri, cursum|run|2|verb
+eo|ire, ii / ivi, itum|go|2|verb
+flumen|fluminis, n|river|2|noun
+fortis|forte|brave, strong|2|adjective
+fortiter||bravely, strongly|2|adverb
+gladius|gladii, m|sword|2|noun
+Graecus|Graeca, Graecum|Greek|2|adjective
+hasta|hastae, f|spear|2|noun
+iacio|iacere, ieci, iactum|throw|2|verb
+in|(+accusative)|into, onto|2|preposition
+ingens|ingentis|huge|2|adjective
+inquit|inquiunt|he/she says/said, they say/said|2|verb
+interficio|interficere, interfeci, interfectum|kill|2|verb
+maneo|manere, mansi, mansum|remain, stay|2|verb
+non||not|2|adverb
+per|(+accusative)|through, along|2|preposition
+periculum|periculi, n|danger|2|noun
+prope|(+accusative)|near|2|preposition
+sagitta|sagittae, f|arrow|2|noun
+silva|silvae, f|wood|2|noun
+timeo|timere, timui, timitum|fear, be afraid|2|verb
+trans|(+accusative)|across|2|preposition
+vinco|vincere, vici, victum|conquer, win, be victorious, defeat|2|verb
+a, ab|(+ablative)|from, away from, by|3|preposition
+ascendo|ascendere, ascendi, ascensum|climb|3|verb
+audio|audire, audivi, auditum|hear, listen to|3|verb
+auxilium|auxilii, n|help|3|noun
+bonus|bona, bonum|good|3|adjective
+caelum|caeli, n|sky, heaven|3|noun
+celeriter||quickly|3|adverb
+conspicio|conspicere, conspexi, conspectum|catch sight of, notice|3|verb
+cum|(+ablative)|with|3|preposition
+de|(+ablative)|from, down from, about|3|preposition
+descendo|descendere, descendi, descensum|go down, come down|3|verb
+difficilis|difficile|difficult|3|adjective
+diu||for a long time|3|adverb
+e, ex|(+ablative)|from, out of, out from|3|preposition
+equus|equi, m|horse|3|noun
+facilis|facile|easy|3|adjective
+felix|felicis|fortunate, happy, lucky|3|adjective
+in|(+ablative)|in, on|3|preposition
+iubeo|iubere, iussi, iussum|order|3|verb
+magnus|magna, magnum|big, large, great|3|adjective
+malus|mala, malum|evil, bad|3|adjective
+mare|maris, n|sea|3|noun
+mons|montis, m|mountain|3|noun
+olim||once, some time ago|3|adverb
+peto|petere, petivi, petitum|make for, seek, beg/ask for|3|verb
+possum|posse, potui|can, be able|3|verb
+pugno|pugnare, pugnavi, pugnatum|fight|3|verb
+subito||suddenly|3|adverb
+tandem||at last, finally|3|adverb
+terra|terrae, f|ground, land, country|3|noun
+(-ne)||(introduces question)|4|question word
+aedifico|aedificare, aedificavi, aedificatum|build|4|verb
+ager|agri, m|field|4|noun
+aurum|auri, n|gold|4|noun
+credo|credere, credidi, creditum + dative|believe, trust|4|verb
+crudelis|crudele|cruel|4|adjective
+cur?||why?|4|question word
+do|dare, dedi, datum|give|4|verb
+donum|doni, n|gift, present|4|noun
+facio|facere, feci, factum|make, do|4|verb
+fero|ferre, tuli, latum|bring, carry, bear|4|verb
+habeo|habere, habui, habitum|have, hold|4|verb
+ira|irae, f|anger|4|noun
+miser|misera, miserum|miserable, wretched, sad|4|adjective
+nolo|nolle, nolui|not want, refuse|4|verb
+nomen|nominis, n|name|4|noun
+nonne …?||surely ... ?|4|question word
+num ... ?||surely not?|4|question word
+pecunia|pecuniae, f|money|4|noun
+persuadeo|persuadere, persuasi, persuasum + dative|persuade|4|verb
+perterritus|perterrita, perterritum|terrified|4|adjective
+pono|ponere, posui, positum|put, place, set up|4|verb
+quando?||when?|4|question word
+quod||because|4|conjunction
+semper||always|4|adverb
+tamen||however|4|conjunction
+templum|templi, n|temple|4|noun
+tristis|triste|sad|4|adjective
+ubi?||where?|4|question word
+volo|velle, volui|want, wish, be willing|4|verb
+absum|abesse, afui|be absent, be away, be distant from|5|verb
+adsum|adesse, adfui|be here, be present|5|verb
+agricola|agricolae, m|farmer|5|noun
+ancilla|ancillae, f|slave-girl, slave-woman|5|noun
+aqua|aquae, f|water|5|noun
+bibo|bibere, bibi|drink|5|verb
+cena|cenae, f|dinner, meal|5|noun
+ceteri|ceterae, cetera|the rest, the others|5|adjective
+cibus|cibi, m|food|5|noun
+clamo|clamare, clamavi, clamatum|shout|5|verb
+consumo|consumere, consumpsi, consumptum|eat|5|verb
+fessus|fessa, fessum|tired|5|adjective
+festino|festinare, festinavi, festinatum|hurry|5|verb
+iterum||again|5|adverb
+ludus|ludi, m|school, game, public games/festival (pl)|5|noun
+magnopere||greatly, very much|5|adverb
+mortuus|mortua, mortuum|dead|5|adjective
+mox||soon|5|adverb
+nunc||now|5|adverb
+paro|parare, paravi, paratum|prepare, provide|5|verb
+rideo|ridere, risi, risum|laugh, smile, laugh at|5|verb
+sacer|sacra, sacrum|sacred|5|adjective
+servus|servi, m|slave|5|noun
+specto|spectare, spectavi, spectatum|look at, watch|5|verb
+taberna|tabernae, f|shop, inn|5|noun
+urbs|urbis, f|city|5|noun
+venio|venire, veni, ventum|come|5|verb
+villa|villae, f|house, country villa|5|noun
+vinum|vini, n|wine|5|noun
+voco|vocare, vocavi, vocatum|call|5|verb
+altus|alta, altum|high, deep|6|adjective
+amicus|amici, m|friend|6|noun
+annus|anni, m|year|6|noun
+dormio|dormire, dormivi, dormitum|sleep|6|verb
+emo|emere, emi, emptum|buy|6|verb
+hic||here|6|adverb
+hora|horae, f|hour|6|noun
+iam||now, already|6|adverb
+ibi||there|6|adverb
+itaque||and so, therefore|6|conjunction
+iuvenis|iuvenis, m|young man|6|noun
+locus|loci, m|place|6|noun
+meus|mea, meum|my|6|adjective
+moneo|monere, monui, monitum|warn, advise|6|verb
+noli / nolite|(+ infinitive)|don't ...|6|verb
+noster|nostra, nostrum|our|6|adjective
+novus|nova, novum|new|6|adjective
+numquam||never|6|adverb
+o|(+ vocative)|O|6|particle
+ostendo|ostendere, ostendi, ostentum|show|6|verb
+parvus|parva, parvum|small|6|adjective
+puella|puellae, f|girl|6|noun
+puer|pueri, m|boy|6|noun
+respondeo|respondere, respondi, responsum|reply|6|verb
+rogo|rogare, rogavi, rogatum|ask, ask for|6|verb
+sic||thus, in this way|6|adverb
+suus|sua, suum|his/her/its/their (own)|6|adjective
+tuus|tua, tuum|your (sg), yours|6|adjective
+verbum|verbi, n|word|6|noun
+vester|vestra, vestrum|your (pl), yours|6|adjective
+video|videre, vidi, visum|see|6|verb
+centum||100|6|number
+decem||10|6|number
+decimus|decima, decimum|tenth|6|number
+duo|duae, duo|2|6|number
+milia|milium|1000s|6|number
+mille||1000|6|number
+nonus|nona, nonum|ninth|6|number
+novem||9|6|number
+octavus|octava, octavum|eighth|6|number
+octo||8|6|number
+primus|prima, primum|first|6|number
+quartus|quarta, quartum|fourth|6|number
+quattuor||4|6|number
+quinque||5|6|number
+quintus|quinta, quintum|fifth|6|number
+secundus|secunda, secundum|second|6|number
+septem||7|6|number
+septimus|septima, septimum|seventh|6|number
+sex||6|6|number
+sextus|sexta, sextum|sixth|6|number
+tertius|tertia, tertium|third|6|number
+tres|tria|3|6|number
+unus|una, unum|1|6|number
+ambulo|ambulare, ambulavi, ambulatum|walk|7|verb
+antequam||before|7|conjunction
+civis|civis, m / f|citizen|7|noun
+clarus|clara, clarum|famous, clear|7|adjective
+dico|dicere, dixi, dictum|say, speak, tell|7|verb
+domina|dominae, f|mistress|7|noun
+dominus|domini, m|master|7|noun
+et ... et||both ... and|7|conjunction
+forum|fori, n|forum, market place|7|noun
+habito|habitare, habitavi, habitatum|live|7|verb
+hic|haec, hoc|this, these|7|pronoun
+hortus|horti, m|garden|7|noun
+ille|illa, illud|that, those, he, she, it|7|pronoun
+is|ea, id|he, she, it, that, those|7|pronoun
+libero|liberare, liberavi, liberatum|set free|7|verb
+libertus|liberti, m|freedman, ex-slave|7|noun
+murus|muri, m|wall|7|noun
+nuntius|nuntii, m|messenger|7|noun
+omnis|omne|all, every|7|adjective
+pauci|paucae, pauca|few, a few|7|adjective
+postquam||after, when|7|conjunction
+quamquam||although|7|conjunction
+qui|quae, quod|who, which|7|pronoun
+quis?|quis? quid?|who? what? which?|7|question word
+quoque||also, too|7|adverb
+Roma|Romae, f|Rome|7|noun
+saluto|salutare, salutavi, salutatum|greet|7|verb
+senator|senatoris, m|senator|7|noun
+ubi||when, where|7|conjunction
+via|viae, f|street, road, way|7|noun
+abeo|abire, abii, abitum|go away|8|verb
+adeo|adire, adii, aditum|go to, approach|8|verb
+appropinquo|appropinquare, appropinquavi, appropinquatum + dative|approach, come near to|8|verb
+clamor|clamoris, m|shout, shouting, noise|8|noun
+convenio|convenire, conveni, conventum|come together, gather, meet|8|verb
+cupio|cupere, cupivi, cupitum|want, desire|8|verb
+ego|mei|I, me|8|pronoun
+enim||for|8|conjunction
+epistula|epistulae, f|letter|8|noun
+exeo|exire, exii, exitum|go out from, go away|8|verb
+ferox|ferocis|fierce, ferocious|8|adjective
+frustra||in vain|8|adverb
+ineo|inire, inii, initum|go into, enter|8|verb
+laboro|laborare, laboravi, laboratum|work, toil|8|verb
+lego|legere, legi, lectum|read, choose|8|verb
+liber|libri, m|book|8|noun
+longus|longa, longum|long|8|adjective
+magis||more|8|adverb
+magister|magistri, m|teacher|8|noun
+maior|maius|bigger, larger, greater|8|adjective
+maxime||very greatly|8|adverb
+maximus|maxima, maximum|greatest, largest, biggest|8|adjective
+medius|media, medium|middle|8|adjective
+melior|melius|better|8|adjective
+minimus|minima, minimum|smallest, least|8|adjective
+minor|minus|smaller, less|8|adjective
+nobilis|nobile|of noble birth, renowned|8|adjective
+nos|nostrum|we, us|8|pronoun
+notus|nota, notum|famous, well-known|8|adjective
+optimus|optima, optimum|best|8|adjective
+peior|peius|worse|8|adjective
+pereo|perire, perii, peritum|die, perish|8|verb
+pessimus|pessima, pessimum|worst|8|adjective
+plures|plura|more|8|adjective
+plurimus|plurima, plurimum|most, very many|8|adjective
+plus|(+ genitive)|more|8|adjective
+quam||than, how|8|adverb
+quam|(+ superlative)|as ... as possible|8|adverb
+redeo|redire, redii, reditum|go back, come back, return|8|verb
+scribo|scribere, scripsi, scriptum|write|8|verb
+se|sui|himself, herself, itself, themselves|8|pronoun
+senex|senis, m|old man|8|noun
+stultus|stulta, stultum|stupid, foolish|8|adjective
+transeo|transire, transii, transitum|go over, cross|8|verb
+tu|tui|you (sg)|8|pronoun
+vir|viri, m|man, husband|8|noun
+vos|vestrum|you (pl)|8|pronoun
+bene||well|9|adverb
+comes|comitis, m / f|comrade, companion|9|noun
+copiae|copiarum, f pl|forces, troops|9|noun
+custodio|custodire, custodivi, custoditum|guard|9|verb
+defendo|defendere, defendi, defensum|defend|9|verb
+deinde||then|9|adverb
+deleo|delere, delevi, deletum|destroy|9|verb
+duco|ducere, duxi, ductum|lead, take|9|verb
+dux|ducis, m|leader|9|noun
+gero|gerere, gessi, gestum|wear (clothes), wage (war)|9|verb
+hostis|hostis, m|enemy|9|noun
+incendo|incendere, incendi, incensum|burn, set on fire|9|verb
+incola|incolae, m / f|inhabitant|9|noun
+invito|invitare, invitavi, invitatum|invite|9|verb
+miles|militis, m|soldier|9|noun
+mitto|mittere, misi, missum|send|9|verb
+mors|mortis, f|death|9|noun
+moveo|movere, movi, motum|move|9|verb
+neco|necare, necavi, necatum|kill|9|verb
+occido|occidere, occidi, occisum|kill|9|verb
+occupo|occupare, occupavi, occupatum|take possession of, occupy|9|verb
+oppidum|oppidi, n|town|9|noun
+oppugno|oppugnare, oppugnavi, oppugnatum|attack|9|verb
+patria|patriae, f|country, homeland|9|noun
+proelium|proelii, n|battle|9|noun
+rapio|rapere, rapui, raptum|seize, grab|9|verb
+scutum|scuti, n|shield|9|noun
+supero|superare, superavi, superatum|overcome, overpower|9|verb
+trado|tradere, tradidi, traditum|hand over, hand down|9|verb
+vulnero|vulnerare, vulneravi, vulneratum|wound, injure|9|verb
+(-que)||and|10|conjunction
+alii....alii....||some ... others|10|adjective
+alius|alia, aliud|other, another|10|adjective
+amor|amoris, m|love|10|noun
+circum|(+accusative)|around|10|preposition
+coniunx|coniugis, m / f|husband / wife|10|noun
+doceo|docere, docui, doctum|teach|10|verb
+doctus|docta, doctum|educated|10|adjective
+exspecto|exspectare, exspectavi, exspectatum|wait for, expect|10|verb
+forte||by chance|10|adverb
+fugio|fugere, fugi, fugitum|run away, flee|10|verb
+inter|(+accusative)|among, between|10|preposition
+invenio|invenire, inveni, inventum|find|10|verb
+iter|itineris, n|journey|10|noun
+lux|lucis, f|light, daylight|10|noun
+maritus|mariti, m|husband|10|noun
+mirabilis|mirabile|wonderful, extraordinary|10|adjective
+mulier|mulieris, f|woman, wife|10|noun
+nauta|nautae, m|sailor|10|noun
+navigo|navigare, navigavi, navigatum|sail|10|verb
+navis|navis, f|ship|10|noun
+necesse||necessary|10|adjective
+nihil||nothing|10|pronoun
+parens|parentis, m / f|parent|10|noun
+pars|partis, f|part|10|noun
+post|(+accusative)|after, behind|10|preposition
+quaero|quaerere, quaesivi, quaesitum|search for, look for, ask|10|verb
+satis||enough|10|adverb
+statim||at once, immediately|10|adverb
+teneo|tenere, tenui, tentum|hold|10|verb
+turba|turbae, f|crowd|10|noun
+tutus|tuta, tutum|safe|10|adjective
+accipio|accipere, accepi, acceptum|receive, accept, take in|11|verb
+advenio|advenire, adveni, adventum|arrive|11|verb
+autem||but, however|11|conjunction
+carus|cara, carum|dear, beloved|11|adjective
+consilium|consilii, n|plan, idea, advice|11|noun
+debeo|debere, debui, debitum|owe, ought, should, must|11|verb
+discedo|discedere, discessi, discessum|depart, leave|11|verb
+ecce!||look!|11|particle
+intellego|intellegere, intellexi, intellectum|understand, realise|11|verb
+intro|intrare, intravi, intratum|enter|11|verb
+neque, nec||and not, nor, neither|11|conjunction
+nuntio|nuntiare, nuntiavi, nuntiatum|announce, report|11|verb
+pax|pacis, f|peace|11|noun
+poeta|poetae, m|poet|11|noun
+porta|portae, f|gate|11|noun
+postea||afterwards|11|adverb
+pro|(+ablative)|in front of, for, on behalf of|11|preposition
+propter|(+accusative)|on account of, because of|11|preposition
+puto|putare, putavi, putatum|think|11|verb
+quo?||to where?|11|question word
+reduco|reducere, reduxi, reductum|lead back, bring back|11|verb
+relinquo|relinquere, reliqui, relictum|leave, leave behind|11|verb
+servo|servare, servavi, servatum|save, protect, keep|11|verb
+socius|socii, m|ally|11|noun
+sto|stare, steti, statum|stand|11|verb
+taceo|tacere, tacui, tacitum|be silent, be quiet|11|verb
+tempus|temporis, n|time|11|noun
+unda|undae, f|wave|11|noun
+unde?||from where?|11|question word
+validus|valida, validum|strong|11|adjective
+cado|cadere, cecidi, casum|fall|12|verb
+caput|capitis, n|head|12|noun
+celer|celeris, celere|quick, fast|12|adjective
+colligo|colligere, collegi, collectum|gather together, collect|12|verb
+constituo|constituere, constitui, constitutum|decide|12|verb
+contendo|contendere, contendi, contentum|hasten, march, compete|12|verb
+cras||tomorrow|12|adverb
+despero|desperare, desperavi, desperatum|despair|12|verb
+effugio|effugere, effugi|escape|12|verb
+erro|errare, erravi, erratum|stray, make a mistake|12|verb
+fortasse||perhaps|12|adverb
+frater|fratris, m|brother|12|noun
+gens|gentis, f|family, tribe, people|12|noun
+gravis|grave|heavy, serious|12|adjective
+heri||yesterday|12|adverb
+hodie||today|12|adverb
+igitur||therefore, and so|12|conjunction
+insula|insulae, f|island|12|noun
+nam||for|12|conjunction
+narro|narrare, narravi, narratum|tell, relate|12|verb
+nemo|nullius|no one, nobody|12|pronoun
+nox|noctis, f|night|12|noun
+nullus|nulla, nullum|not any, no|12|adjective
+porto|portare, portavi, portatum|carry, bear, take|12|verb
+regnum|regni, n|kingdom|12|noun
+sedeo|sedere, sedi, sessum|sit|12|verb
+soror|sororis, f|sister|12|noun
+traho|trahere, traxi, tractum|drag|12|verb
+vendo|vendere, vendidi, venditum|sell|12|verb
+ventus|venti, m|wind|12|noun
+</script>
+
+<!-- ===================== HEADER ===================== -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div>
+        <h1>De <span class="of">Romanis</span> Vocab Tester</h1>
+      </div>
+    </div>
+    <div class="header-tools">
+      <span class="chip badge-weak" id="weakBadge" onclick="goWeakDrill()" title="Review weak words" style="display:none;"><span id="weakBadgeN">0</span>&nbsp;to&nbsp;review</span>
+      <button class="chip" onclick="show('home')">Home</button>
+      <button class="chip" onclick="show('study')">Study</button>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">☾</button>
+    </div>
+  </div>
+  <div class="meander"></div>
+</header>
+
+<main>
+<!-- ===================== HOME ===================== -->
+<section id="view-home" class="view active">
+  <h2 class="section-title">Choose your chapters</h2>
+  <p class="lead">Select one or more chapters from <em>De Romanis</em>, then study or test yourself. Your progress and mistakes are saved between sessions.</p>
+
+  <!-- word of the day -->
+  <div class="panel wotd" id="wotd"></div>
+
+  <!-- missed-before panel -->
+  <div class="panel" id="missedPanel" style="display:none;">
+    <div class="summary-bar" style="margin:0 0 6px;">
+      <h3 style="margin:0;color:var(--accent);font-size:1.4rem;">Words to review (<span id="missedN">0</span>)</h3>
+      <button class="btn amber" onclick="drillMissed()">Review these</button>
+    </div>
+    <p class="muted" style="margin:4px 0 0;font-size:.88rem;font-style:italic;">Answer each correctly three times in a row, across sessions, to master it and clear it from this list.</p>
+    <ul class="weak-list" id="missedList"></ul>
+  </div>
+
+  <div class="btn-row" style="margin:24px 0 10px;">
+    <button class="btn" onclick="selectAllChapters()">Select all</button>
+    <button class="btn ghost" onclick="clearChapters()">Clear</button>
+  </div>
+
+  <div class="stage-grid" id="stageGrid"></div>
+
+  <div class="summary-bar">
+    <span class="total-pill">Selected: <b id="selCount">0</b> words across <b id="selChaps">0</b> chapters</span>
+  </div>
+
+  <!-- quick study preview (scrollable) -->
+  <div class="panel" id="previewPanel">
+    <div class="preview-head">
+      <div>
+        <div class="label">Quick reference</div>
+        <h3 style="margin:2px 0 0;color:var(--ink);font-size:1.4rem;" id="previewTitle">Vocabulary at a glance</h3>
+      </div>
+      <button class="btn ghost" onclick="show('study')">Open full study guide →</button>
+    </div>
+    <div class="preview-scroll" id="previewScroll"></div>
+  </div>
+
+  <!-- quiz options -->
+  <div class="panel">
+    <div class="opt-row">
+      <div class="opt-group">
+        <label>Number of words</label>
+        <select id="optCount">
+          <option value="all">All selected</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Mode</label>
+        <select id="optMode">
+          <option value="lat-en">Latin → English (type)</option>
+          <option value="en-lat">English → Latin (type)</option>
+          <option value="mc">Multiple choice</option>
+          <option value="flash">Flashcards</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Word type</label>
+        <select id="optType">
+          <option value="all">All types</option>
+          <option value="noun">Nouns</option>
+          <option value="verb">Verbs</option>
+          <option value="adjective">Adjectives</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Timer / question</label>
+        <select id="optTimer">
+          <option value="0">Unlimited</option>
+          <option value="5">5 seconds</option>
+          <option value="10">10 seconds</option>
+          <option value="30">30 seconds</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Smart marking</label>
+        <label class="switch"><input type="checkbox" id="optAI" checked><span>Allow misspelled words</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn primary lg" id="startQuizBtn" onclick="startQuiz('select')" disabled>Begin quiz</button>
+    <button class="btn lg" id="newSessionBtn" onclick="startQuiz('select')" disabled title="Begins a fresh run with live stats reset to zero">New session</button>
+    <button class="btn lg" id="studyFirstBtn" onclick="studyFirst()" disabled>Study first</button>
+    <button class="btn ghost lg" onclick="show('mistakes-bank')">Missed words</button>
+  </div>
+
+  <!-- session log -->
+  <div class="panel" id="sessionLogPanel" style="display:none;">
+    <div class="summary-bar" style="margin:0 0 8px;">
+      <h3 style="margin:0;color:var(--ink);font-size:1.4rem;">Recent sessions</h3>
+      <button class="btn ghost" onclick="clearSessions()">Clear history</button>
+    </div>
+    <table class="report" id="sessionLog"></table>
+  </div>
+</section>
+
+<!-- ===================== STUDY ===================== -->
+<section id="view-study" class="view">
+  <h2 class="section-title">Study guide</h2>
+  <p class="lead">Review the vocabulary before testing. Star words you want to focus on. Tip: <em>Ctrl/Cmd&nbsp;+&nbsp;P</em> prints a clean revision list.</p>
+  <input type="text" class="study-search" id="studySearch" placeholder="Search Latin or English…" oninput="renderStudy()">
+  <div class="tabs" id="studyTabs">
+    <button class="tab active" data-f="all" onclick="setStudyFilter(this,'all')">All</button>
+    <button class="tab" data-f="noun" onclick="setStudyFilter(this,'noun')">Nouns</button>
+    <button class="tab" data-f="verb" onclick="setStudyFilter(this,'verb')">Verbs</button>
+    <button class="tab" data-f="adjective" onclick="setStudyFilter(this,'adjective')">Adjectives</button>
+    <button class="tab" data-f="other" onclick="setStudyFilter(this,'other')">Other</button>
+  </div>
+  <p class="muted" id="studyScope" style="font-size:.88rem;font-style:italic;"></p>
+  <div id="studyBody"></div>
+  <div class="btn-row" style="margin-top:28px;">
+    <button class="btn primary lg" onclick="show('home')">Begin quiz</button>
+  </div>
+</section>
+
+<!-- ===================== QUIZ ===================== -->
+<section id="view-quiz" class="view">
+  <div class="quiz-top">
+    <div class="stats">
+      <div class="stat"><span class="v" id="sScore">0/0</span><span class="l">Score</span></div>
+      <div class="stat streak"><span class="v" id="sStreak">0</span><span class="l">Streak</span></div>
+      <div class="stat"><span class="v" id="sPos">0/0</span><span class="l">Word</span></div>
+      <div class="stat"><span class="v"><span class="timer-ring" id="sTimer">∞</span></span><span class="l">Timer</span></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="restartSession()" title="Start this run again from the beginning">↻ Restart</button>
+      <button class="btn ghost" onclick="confirmQuit()">End session</button>
+    </div>
+  </div>
+  <div class="progress"><i id="progBar"></i></div>
+  <div class="qcard" id="qcard"></div>
+</section>
+
+<!-- ===================== SUMMARY ===================== -->
+<section id="view-summary" class="view">
+  <h2 class="section-title">Session summary</h2>
+  <p class="lead" id="summarySub"></p>
+  <div class="stat-cards" id="summaryStats"></div>
+  <div class="panel">
+    <h3 style="margin:0 0 6px;color:var(--ink);font-size:1.4rem;">Words you struggled with</h3>
+    <div id="summaryStruggle"></div>
+  </div>
+  <div class="panel" id="leaderboardPanel" style="display:none;">
+    <h3 style="margin:0 0 6px;color:var(--gold);font-size:1.4rem;">Leaderboard — top scores</h3>
+    <div id="leaderboardBody"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn amber lg" id="retryMistakesBtn" onclick="startRetryMistakes()">Retry mistakes</button>
+    <button class="btn lg" onclick="show('mistakes-bank')">Missed words</button>
+    <button class="btn lg" onclick="exportCSV()">Export CSV</button>
+    <button class="btn primary lg" onclick="show('home')">Home</button>
+  </div>
+</section>
+
+<!-- ===================== MISTAKES RETRY ===================== -->
+<section id="view-mistakes" class="view amber-skin">
+  <div class="quiz-top">
+    <div class="stats">
+      <div class="stat"><span class="v" id="mRemain">0</span><span class="l">Remaining</span></div>
+      <div class="stat"><span class="v" id="mCleared">0</span><span class="l">Cleared</span></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" onclick="restartRetry()" title="Restart this review round">↻ Restart</button>
+      <button class="btn ghost" onclick="show('summary')">Stop</button>
+    </div>
+  </div>
+  <div class="progress"><i id="mProgBar"></i></div>
+  <div class="qcard amber-theme" id="mcard"></div>
+</section>
+
+<!-- ===================== CELEBRATION ===================== -->
+<section id="view-celebrate" class="view">
+  <div class="celebrate">
+    <svg class="laurel" viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M50 92 C30 80 20 58 22 30"/><path d="M50 92 C70 80 80 58 78 30"/></g><g fill="currentColor"><ellipse cx="24" cy="34" rx="6" ry="3" transform="rotate(-35 24 34)"/><ellipse cx="22" cy="46" rx="6.5" ry="3.2" transform="rotate(-20 22 46)"/><ellipse cx="24" cy="58" rx="6.5" ry="3.2" transform="rotate(-8 24 58)"/><ellipse cx="29" cy="70" rx="6" ry="3" transform="rotate(8 29 70)"/><ellipse cx="76" cy="34" rx="6" ry="3" transform="rotate(35 76 34)"/><ellipse cx="78" cy="46" rx="6.5" ry="3.2" transform="rotate(20 78 46)"/><ellipse cx="76" cy="58" rx="6.5" ry="3.2" transform="rotate(8 76 58)"/><ellipse cx="71" cy="70" rx="6" ry="3" transform="rotate(-8 71 70)"/><circle cx="50" cy="22" r="5"/></g></svg>
+    <h2>Euge!</h2>
+    <p class="lead" style="margin-left:auto;margin-right:auto;">Every word you missed has been answered correctly. Well done.</p>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn primary lg" onclick="show('home')">Back home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MISTAKE BANK ===================== -->
+<section id="view-mistakes-bank" class="view amber-skin">
+  <h2 class="section-title">Missed words</h2>
+  <p class="lead">Every word you've ever missed, saved across sessions. Master a word — three correct in a row — to remove it.</p>
+  <div class="btn-row" style="margin-bottom:16px;">
+    <button class="btn amber" id="bankDrillBtn" onclick="drillMissed()">Review all words</button>
+    <button class="btn" onclick="show('home')">Home</button>
+    <span class="muted" style="align-self:center;font-size:.84rem;font-style:italic;">Sort:</span>
+    <button class="btn ghost" onclick="setBankSort('errors')">By error count</button>
+    <button class="btn ghost" onclick="setBankSort('seen')">By last seen</button>
+  </div>
+  <div id="bankBody"></div>
+</section>
+
+</main>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="watermark" aria-hidden="true">Samuel Cai</div>
+<footer>De Romanis Vocabulary &middot; all progress saved locally in your browser &middot; <span id="leaderHint"></span></footer>
+
+<script>
+"use strict";
+/* ========================================================================
+   DATA
+======================================================================== */
+const WORDS = (()=>{
+  const raw = document.getElementById('rawdata').textContent.trim().split('\n');
+  return raw.map((line,i)=>{
+    const [latin,info,english,chapter,type] = line.split('|');
+    return {
+      id:i,
+      latin:latin.trim(),
+      info:(info||'').trim(),
+      english:(english||'').trim(),
+      chapter:parseInt(chapter,10),
+      type:(type||'').trim()
+    };
+  });
+})();
+const CHAPTERS = [...new Set(WORDS.map(w=>w.chapter))].sort((a,b)=>a-b);
+
+/* category mapping for filters */
+function catOf(w){
+  if(w.type==='noun') return 'noun';
+  if(w.type==='verb') return 'verb';
+  if(w.type==='adjective') return 'adjective';
+  return 'other';
+}
+
+/* ========================================================================
+   PERSISTENT STATE (localStorage)
+======================================================================== */
+const LS = {
+  theme:'dr_theme', missed:'dr_missed', sessions:'dr_sessions',
+  stars:'dr_stars', difficult:'dr_difficult', leader:'dr_leaderboard'
+};
+function load(key,def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def; }catch(e){ return def; } }
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){} }
+
+let missedHist = load(LS.missed,{});   // latin -> {latin,english,chapter,timesMissed,lastMissed,consecutive}
+let sessionLog = load(LS.sessions,[]);
+let stars = new Set(load(LS.stars,[]));
+let difficult = new Set(load(LS.difficult,[]));
+let leaderboard = load(LS.leader,[]);
+
+/* ========================================================================
+   THEME
+======================================================================== */
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('themeBtn').textContent = t==='light' ? '☀' : '☾';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur==='light' ? 'dark' : 'light';
+  applyTheme(next); save(LS.theme,next);
+}
+(function initTheme(){
+  let t = load(LS.theme,null);
+  if(!t){ t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark':'light'; }
+  applyTheme(t);
+})();
+
+/* ========================================================================
+   VIEW SWITCHING
+======================================================================== */
+function show(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  window.scrollTo(0,0);
+  // top progress line only shows during a quiz / review round
+  document.getElementById('topprog').classList.toggle('on', name==='quiz'||name==='mistakes');
+  if(name==='home') renderHome();
+  if(name==='study') renderStudy();
+  if(name==='mistakes-bank') renderBank();
+}
+
+/* fill the thin progress line pinned to the top of the page */
+function setTopProgress(pct){
+  const i=document.querySelector('#topprog > i');
+  if(i) i.style.width=Math.max(0,Math.min(100,pct))+'%';
+}
+
+/* ========================================================================
+   AUDIO (Web Audio API)
+======================================================================== */
+let actx=null;
+function tone(freq,dur,type,gain){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    g.gain.value=gain||0.08;
+    o.connect(g); g.connect(actx.destination);
+    const t=actx.currentTime;
+    o.start(t); g.gain.setValueAtTime(g.gain.value,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.stop(t+dur);
+  }catch(e){}
+}
+function dingCorrect(){ tone(660,0.12,'sine',0.09); setTimeout(()=>tone(990,0.16,'sine',0.08),90); }
+function buzzWrong(){ tone(180,0.22,'sawtooth',0.06); }
+
+/* ========================================================================
+   TOAST
+======================================================================== */
+function toast(msg,master){
+  const wrap=document.getElementById('toastWrap');
+  const el=document.createElement('div');
+  el.className='toast'+(master?' master':'');
+  el.innerHTML=msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, master?2600:1800);
+}
+
+/* ========================================================================
+   ANSWER VALIDATION
+======================================================================== */
+function normalize(s){
+  return (s||'').toLowerCase().trim()
+    .replace(/[.,!;:?]+$/,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function addVariants(base,out){
+  if(!base) return;
+  out.add(base);
+  const noTo = base.replace(/^to\s+/,'');
+  out.add(noTo);
+  const noParen = base.replace(/\([^)]*\)/g,'').replace(/\s+/g,' ').trim();
+  if(noParen){ out.add(noParen); out.add(noParen.replace(/^to\s+/,'')); }
+}
+/* candidate English answers from a meaning string */
+function englishCandidates(eng){
+  const out=new Set();
+  eng.split(/[,/]/).forEach(p=> addVariants(normalize(p),out));
+  addVariants(normalize(eng),out);
+  out.delete('');
+  return out;
+}
+/* candidate Latin headwords from a latin field */
+function latinCandidates(latin){
+  const out=new Set();
+  latin.split(/[,/]/).forEach(p=>{
+    let b=normalize(p).replace(/[()]/g,'').trim();
+    b=b.replace(/\.+$/,'');
+    if(b) out.add(b);
+    const nh=b.replace(/^-/,'').replace(/-$/,'').trim();
+    if(nh) out.add(nh);
+  });
+  out.delete('');
+  return out;
+}
+/* primary meaning (before first comma) for MC display */
+function primaryMeaning(eng){ return eng.split(',')[0].trim(); }
+
+function checkAnswer(userRaw, word, dir){
+  const u = normalize(userRaw);
+  if(!u) return false;
+  if(dir==='en-lat'){
+    const uClean=u.replace(/[()]/g,'');
+    return latinCandidates(word.latin).has(u) || latinCandidates(word.latin).has(uClean);
+  } else {
+    const uNoTo=u.replace(/^to\s+/,'');
+    const c=englishCandidates(word.english);
+    return c.has(u)||c.has(uNoTo);
+  }
+}
+/* find a different word in pool that matches the user's wrong answer (for hint) */
+function findHint(userRaw, word, pool, dir){
+  const u=normalize(userRaw); if(!u) return null;
+  for(const w of pool){
+    if(w.latin===word.latin) continue;
+    if(dir==='en-lat'){
+      if(latinCandidates(w.latin).has(u)) return w.english;
+    } else {
+      if(englishCandidates(w.english).has(u)||englishCandidates(w.english).has(u.replace(/^to\s+/,''))) return w.latin;
+    }
+  }
+  return null;
+}
+
+/* tiny edit-distance with adjacent-transposition (Damerau), capped for speed.
+   Transposition matters because swapped letters are the most common typo. */
+function lev(a,b){
+  const m=a.length,n=b.length;
+  if(!m) return n; if(!n) return m;
+  if(Math.abs(m-n)>2) return 9;
+  const d=[];
+  for(let i=0;i<=m;i++){ d[i]=[i]; }
+  for(let j=0;j<=n;j++){ d[0][j]=j; }
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost);
+      if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1]){
+        d[i][j]=Math.min(d[i][j], d[i-2][j-2]+1); // adjacent swap = 1
+      }
+    }
+  }
+  return d[m][n];
+}
+/* instant local judgement of "close" answers — typo-tolerant but careful:
+   - no fuzziness on very short words (a 1-letter slip there is too risky)
+   - tolerance scales with word length (longer = more forgiving)
+   - never accept something that is actually a DIFFERENT word's answer        */
+function fuzzyAccept(userRaw, word, dir, pool){
+  const strip=s=>s.replace(/^(a|an|the|to)\s+/,'').trim();
+  const u=strip(normalize(userRaw));
+  if(u.length<4) return false;
+  // typed a real (but different) word? that's a genuine mistake, not a typo
+  if(pool && findHint(userRaw, word, pool, dir)) return false;
+  const cands = dir==='en-lat' ? latinCandidates(word.latin) : englishCandidates(word.english);
+  for(const c of cands){
+    const cc=strip(c);
+    if(cc.length<4) continue;                       // skip short targets
+    const thr = cc.length>=11 ? 3 : cc.length>=7 ? 2 : 1;  // longer → more forgiving
+    if(lev(u,cc)<=thr) return true;                 // misspelling of a correct answer
+  }
+  return false;
+}
+
+/* ========================================================================
+   PERSISTENT MISSED-WORDS HISTORY
+======================================================================== */
+function recordMiss(word){
+  const k=word.latin;
+  if(!missedHist[k]) missedHist[k]={latin:word.latin,english:word.english,chapter:word.chapter,timesMissed:0,lastMissed:null,consecutive:0};
+  missedHist[k].timesMissed++;
+  missedHist[k].consecutive=0;
+  missedHist[k].lastMissed=new Date().toISOString();
+  save(LS.missed,missedHist);
+}
+/* called when a word is answered correctly with no wrong attempts this encounter */
+function recordCleanCorrect(word){
+  const k=word.latin;
+  if(!missedHist[k]) return;
+  missedHist[k].consecutive=(missedHist[k].consecutive||0)+1;
+  if(missedHist[k].consecutive>=3){
+    delete missedHist[k];
+    save(LS.missed,missedHist);
+    toast('<b>'+word.latin+'</b> mastered — cleared from your review list.',true);
+    dingCorrect();
+  } else {
+    save(LS.missed,missedHist);
+  }
+}
+function weakList(){
+  return Object.values(missedHist).sort((a,b)=> b.timesMissed-a.timesMissed || (b.lastMissed||'').localeCompare(a.lastMissed||''));
+}
+
+/* ========================================================================
+   HOME RENDER
+======================================================================== */
+let selected = new Set();
+
+function renderStageGrid(){
+  const grid=document.getElementById('stageGrid');
+  grid.innerHTML='';
+  CHAPTERS.forEach(ch=>{
+    const words=WORDS.filter(w=>w.chapter===ch);
+    const counts={};
+    words.forEach(w=>{ const c=catOf(w); counts[c]=(counts[c]||0)+1; });
+    const parts=[];
+    if(counts.verb) parts.push(counts.verb+' verbs');
+    if(counts.noun) parts.push(counts.noun+' nouns');
+    if(counts.adjective) parts.push(counts.adjective+' adj');
+    if(counts.other) parts.push(counts.other+' other');
+    const card=document.createElement('div');
+    card.className='stage-card'+(selected.has(ch)?' selected':'');
+    card.onclick=()=>toggleChapter(ch);
+    card.innerHTML=`
+      <div class="tick">✓</div>
+      <div class="ch-label">Chapter</div>
+      <div class="ch-num">${ch}</div>
+      <div class="ch-count">${words.length} words</div>
+      <div class="ch-break">${parts.join(' · ')}</div>`;
+    grid.appendChild(card);
+  });
+}
+function toggleChapter(ch){ selected.has(ch)?selected.delete(ch):selected.add(ch); renderStageGrid(); updateSelSummary(); }
+function selectAllChapters(){ CHAPTERS.forEach(c=>selected.add(c)); renderStageGrid(); updateSelSummary(); }
+function clearChapters(){ selected.clear(); renderStageGrid(); updateSelSummary(); }
+function selectedWords(){ return WORDS.filter(w=>selected.has(w.chapter)); }
+function updateSelSummary(){
+  const ws=selectedWords();
+  document.getElementById('selCount').textContent=ws.length;
+  document.getElementById('selChaps').textContent=selected.size;
+  const dis=selected.size===0;
+  ['startQuizBtn','newSessionBtn','studyFirstBtn'].forEach(id=>document.getElementById(id).disabled=dis);
+  renderPreview();
+}
+
+function renderPreview(){
+  const scroll=document.getElementById('previewScroll');
+  if(!scroll) return;
+  const scope = selected.size ? selectedWords() : WORDS;
+  document.getElementById('previewTitle').textContent = selected.size
+    ? 'Your selection at a glance'
+    : 'Vocabulary at a glance';
+  let html='';
+  CHAPTERS.forEach(ch=>{
+    const ws=scope.filter(w=>w.chapter===ch);
+    if(!ws.length) return;
+    html+=`<div class="preview-ch">Chapter ${ch} · ${ws.length} words</div>`;
+    ws.forEach(w=>{
+      const starred=stars.has(w.latin)?' starred':'';
+      html+=`<div class="preview-row${starred}">
+        <div class="preview-lat">${w.latin}${w.info?`<span class="pv-info">${w.info}</span>`:''}</div>
+        <div class="preview-eng">${w.english}</div>
+      </div>`;
+    });
+  });
+  scroll.innerHTML=html;
+  scroll.scrollTop=0;
+}
+
+let wotdIdx=null;
+function renderWotd(){
+  const day=Math.floor(Date.now()/86400000);
+  const w=WORDS[wotdIdx==null ? (day % WORDS.length) : wotdIdx];
+  document.getElementById('wotd').innerHTML=`
+    <div class="label" style="width:100%;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;">
+      <span>${wotdIdx==null?'Word of the day':'Random word'}</span>
+      <button class="btn ghost" style="padding:3px 10px;font-size:.74rem;letter-spacing:.04em;text-transform:none;" onclick="shuffleWotd()" title="Show another word">↻ Another</button>
+    </div>
+    <div class="lat">${w.latin}</div>
+    <div class="info">${w.info||'&mdash;'}</div>
+    <div class="eng">— ${w.english}</div>
+    <div class="tag-ch">Ch ${w.chapter} · ${w.type}</div>`;
+}
+function shuffleWotd(){
+  let i; const day=Math.floor(Date.now()/86400000);
+  const cur = wotdIdx==null ? (day % WORDS.length) : wotdIdx;
+  do { i=Math.floor(Math.random()*WORDS.length); } while(WORDS.length>1 && i===cur);
+  wotdIdx=i; renderWotd();
+}
+
+function renderMissedPanel(){
+  const list=weakList();
+  const panel=document.getElementById('missedPanel');
+  const badge=document.getElementById('weakBadge');
+  if(list.length===0){ panel.style.display='none'; badge.style.display='none'; return; }
+  panel.style.display='block';
+  badge.style.display='inline-flex';
+  document.getElementById('weakBadgeN').textContent=list.length;
+  document.getElementById('missedN').textContent=list.length;
+  const ul=document.getElementById('missedList');
+  ul.innerHTML='';
+  list.forEach(m=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span><span class="wl-lat">${m.latin}</span> <span class="wl-eng">${m.english}</span> <span class="tag-ch">Ch ${m.chapter}</span></span>
+                  <span class="wl-miss">×${m.timesMissed} <span style="color:var(--good)">${'●'.repeat(m.consecutive||0)}${'○'.repeat(3-(m.consecutive||0))}</span></span>`;
+    ul.appendChild(li);
+  });
+}
+
+function renderSessionLog(){
+  const panel=document.getElementById('sessionLogPanel');
+  if(sessionLog.length===0){ panel.style.display='none'; return; }  panel.style.display='block';
+  const t=document.getElementById('sessionLog');
+  t.innerHTML='<tr><th>Date</th><th>Chapters</th><th>Score</th><th>Needed 3+ attempts</th></tr>'+
+    sessionLog.slice(-8).reverse().map(s=>`<tr>
+      <td>${new Date(s.date).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${s.chapters}</td>
+      <td><b>${s.pct}%</b> <span class="muted">(${s.correct}/${s.total})</span></td>
+      <td>${s.needPractice>0?'<span class="pill np">'+s.needPractice+'</span>':'<span class="muted">0</span>'}</td>
+    </tr>`).join('');
+}
+
+function clearSessions(){
+  if(sessionLog.length===0) return;
+  if(!confirm('Clear your recent session history? This cannot be undone.')) return;
+  sessionLog=[];
+  save(LS.sessions,sessionLog);
+  renderSessionLog();
+  toast('Session history cleared.');
+}
+
+function renderHome(){
+  renderStageGrid(); updateSelSummary(); renderWotd();
+  renderMissedPanel(); renderSessionLog();
+  document.getElementById('leaderHint').textContent = leaderboard.length? ('top score: '+leaderboard[0].score+'% — '+leaderboard[0].name) : '';
+}
+
+/* ========================================================================
+   STUDY GUIDE
+======================================================================== */
+let studyFilter='all';
+function setStudyFilter(btn,f){
+  studyFilter=f;
+  document.querySelectorAll('#studyTabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderStudy();
+}
+function studyScopeWords(){
+  // study guide shows only the selected chapters
+  return selectedWords();
+}
+function renderStudy(){
+  const q=normalize(document.getElementById('studySearch').value);
+  const scope=studyScopeWords();
+  document.getElementById('studyScope').textContent = selected.size
+    ? `Showing your ${selected.size} selected chapter(s). Add or remove chapters on the home screen.`
+    : 'No chapters selected yet.';
+  const body=document.getElementById('studyBody');
+  body.innerHTML='';
+  if(selected.size===0){
+    body.innerHTML='<p class="empty">Select one or more chapters on the home screen to build your study list.</p>';
+    return;
+  }
+  let shown=0;
+  CHAPTERS.forEach(ch=>{
+    let ws=scope.filter(w=>w.chapter===ch);
+    if(studyFilter!=='all') ws=ws.filter(w=>catOf(w)===studyFilter);
+    if(q) ws=ws.filter(w=> w.latin.toLowerCase().includes(q) || w.english.toLowerCase().includes(q));
+    if(ws.length===0) return;
+    const h=document.createElement('div');
+    h.className='ch-heading'; h.innerHTML='Chapter '+ch+' <span class="muted" style="font-size:.9rem;font-style:italic;font-family:Spectral,serif;font-weight:400;">'+ws.length+' words</span>';
+    body.appendChild(h);
+    const tbl=document.createElement('table'); tbl.className='study';
+    ws.forEach(w=>{
+      shown++;
+      const tr=document.createElement('tr');
+      const starred=stars.has(w.latin);
+      tr.innerHTML=`
+        <td style="width:42px;"><button class="star ${starred?'on':''}" onclick="toggleStar('${w.latin.replace(/'/g,"\\'")}',this)">${starred?'★':'☆'}</button></td>
+        <td><span class="lat">${w.latin}</span><span class="type-tag">${w.type}</span><div class="info">${w.info||'&mdash;'}</div></td>
+        <td class="eng-col">${w.english}</td>`;
+      tbl.appendChild(tr);
+    });
+    body.appendChild(tbl);
+  });
+  if(shown===0) body.innerHTML='<p class="empty">No words match your search.</p>';
+}
+function toggleStar(latin,btn){
+  if(stars.has(latin)){ stars.delete(latin); btn.classList.remove('on'); btn.textContent='☆'; }
+  else { stars.add(latin); btn.classList.add('on'); btn.textContent='★'; }
+  save(LS.stars,[...stars]);
+}
+function studyFirst(){ show('study'); }
+
+/* ========================================================================
+   QUIZ ENGINE
+======================================================================== */
+let S=null;            // current session
+let timerId=null;
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* Build a sequence of exactly `target` questions from `words`.
+   - target 'all' (or null) uses every selected word once
+   - fewer than available: a random subset, biased toward weak/difficult words
+   - more than available: words repeat as evenly as possible
+   In every case, no two identical words ever land next to each other.       */
+function buildPool(words, target){
+  const uniq = words.slice();
+  const total = uniq.length;
+  if(total===0) return [];
+  let N = (target==null || target==='all') ? total : parseInt(target,10);
+  if(!N || N<1) N = total;
+
+  const isWeak = w => difficult.has(w.latin) || !!missedHist[w.latin];
+  // how many times each word should appear
+  const count = new Map();
+  uniq.forEach(w=>count.set(w,0));
+
+  if(N <= total){
+    // pick N distinct words, weak ones first, then random
+    const order = shuffle(uniq).sort((a,b)=> (isWeak(b)?1:0)-(isWeak(a)?1:0));
+    order.slice(0,N).forEach(w=>count.set(w,1));
+  } else {
+    const base = Math.floor(N/total);
+    let rem = N - base*total;
+    uniq.forEach(w=>count.set(w,base));
+    // hand out the remainder, weak words first
+    const order = shuffle(uniq).sort((a,b)=> (isWeak(b)?1:0)-(isWeak(a)?1:0));
+    for(let i=0;i<order.length && rem>0;i++,rem--) count.set(order[i], count.get(order[i])+1);
+  }
+
+  // greedy arrangement: always place the word with the most remaining
+  // copies that differs from the previous one -> no adjacent duplicates
+  let remaining = [...count.entries()].map(([w,c])=>({w,c})).filter(e=>e.c>0);
+  const out=[]; let last=null; const totalN=remaining.reduce((s,e)=>s+e.c,0);
+  for(let k=0;k<totalN;k++){
+    remaining.sort((a,b)=> b.c-a.c || Math.random()-0.5);
+    let pick = remaining.find(e=>e.c>0 && e.w!==last) || remaining.find(e=>e.c>0);
+    pick.c--; out.push(pick.w); last=pick.w;
+  }
+  return out;
+}
+
+function startQuiz(srcWords){
+  let words;
+  if(srcWords==='select') words=selectedWords();
+  else words=srcWords;
+  // apply type filter from options
+  const tf=document.getElementById('optType').value;
+  if(tf!=='all') words=words.filter(w=>catOf(w)===tf);
+  if(words.length===0){ toast('No words match that type in your selection.'); return; }
+  const mode=document.getElementById('optMode').value;
+  const timer=parseInt(document.getElementById('optTimer').value,10);
+  const count=document.getElementById('optCount').value;
+  let label='Chapters '+[...selected].sort((a,b)=>a-b).join(', ');
+  if(count!=='all') label+=' · '+count+' words';
+  beginSession(words,mode,timer,label,count);
+}
+function drillMissed(){
+  const list=weakList();
+  if(list.length===0){ toast('No missed words yet — go take a quiz!'); return; }
+  const words=list.map(m=> WORDS.find(w=>w.latin===m.latin)).filter(Boolean);
+  beginSession(words,'lat-en',0,'Missed-words drill','all');
+}
+function goWeakDrill(){ drillMissed(); }
+
+function beginSession(words,mode,timer,label,count){
+  S={
+    id:'s_'+Date.now(),
+    start:Date.now(),
+    count:(count==null?'all':count),
+    pool:buildPool(words,count),
+    poolWords:words,
+    idx:0,
+    mode, timer, label,
+    correct:0, total:0, streak:0, streakHigh:0,
+    answered:false,
+    attempts:0, hadWrong:false,
+    times:[],
+    record:{},   // latin -> {word, attempts, gotRight, typed:[]}
+    mcFocus:0,
+    ai:aiPref(),
+    checking:false
+  };
+  show('quiz');
+  renderQuestion();
+}
+
+/* read the smart-marking preference (defaults on) */
+function aiPref(){
+  const el=document.getElementById('optAI');
+  return el ? el.checked : true;
+}
+
+function curWord(){ return S.pool[S.idx]; }
+
+function updateQuizStats(){
+  document.getElementById('sScore').textContent=S.correct+'/'+S.total;
+  document.getElementById('sStreak').textContent=S.streak;
+  document.getElementById('sPos').textContent=(S.idx+1)+'/'+S.pool.length;
+  document.getElementById('progBar').style.width=((S.idx)/S.pool.length*100)+'%';
+  setTopProgress(S.idx/S.pool.length*100);
+}
+
+function clearTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+function startTimer(){
+  clearTimer();
+  const el=document.getElementById('sTimer');
+  if(!S.timer){ el.textContent='∞'; el.classList.remove('low'); return; }
+  let left=S.timer;
+  el.textContent=left+'s'; el.classList.remove('low');
+  timerId=setInterval(()=>{
+    left--;
+    if(left<=0){
+      clearTimer();
+      el.textContent='0s';
+      onTimeout();
+      return;
+    }
+    el.textContent=left+'s';
+    el.classList.toggle('low',left<=3);
+  },1000);
+}
+
+function renderQuestion(){
+  S.answered=false; S.attempts=0; S.hadWrong=false; S.qStart=Date.now(); S.mcFocus=0;
+  S._adv=false; clearTimeout(S.autoAdv);
+  updateQuizStats();
+  const w=curWord();
+  const card=document.getElementById('qcard');
+  const diffMarked=difficult.has(w.latin);
+  const diffBtn=`<button class="btn ghost" id="diffBtn" onclick="toggleDifficult()">${diffMarked?'★ Marked difficult':'☆ Mark as difficult'}</button>`;
+
+  if(S.mode==='flash'){
+    card.innerHTML=`
+      <div class="qprompt-label">Flashcard · Ch ${w.chapter} · ${w.type}</div>
+      <div class="flash" id="flash" onclick="flipCard()">
+        <div class="flash-inner">
+          <div class="flash-face front"><div class="big">${w.latin}</div><div class="small">${w.info||''}</div></div>
+          <div class="flash-face back"><div class="big" style="font-size:1.7rem">${w.english}</div><div class="small">${w.latin} — ${w.info||''}</div></div>
+        </div>
+      </div>
+      <div class="flash-hint">Click the card to flip, then mark how you did</div>
+      <div class="banner" id="banner"></div>
+      <div class="controls">
+        <div class="left">${diffBtn}</div>
+        <div class="left" id="flashBtns" style="display:none;">
+          <button class="btn" onclick="flashResult(false)">✗ Didn't know</button>
+          <button class="btn primary" onclick="flashResult(true)">✓ Knew it</button>
+        </div>
+        <button class="btn primary" id="nextBtn" style="display:none;" onclick="nextQuestion()">Next →</button>
+      </div>`;
+    startTimer();
+    return;
+  }
+
+  if(S.mode==='mc'){
+    renderMC(w,diffBtn); startTimer(); return;
+  }
+
+  // type-in (lat-en or en-lat)
+  const promptIsLatin = S.mode==='lat-en';
+  const promptWord = promptIsLatin ? w.latin : w.english;
+  const promptInfo = promptIsLatin ? (w.info||'') : ('Ch '+w.chapter+' · '+w.type);
+  const label = promptIsLatin ? 'Translate to English' : 'Give the Latin (dictionary form)';
+  card.innerHTML=`
+    <div class="qprompt-label">${label} · Ch ${w.chapter} · ${w.type}</div>
+    <div class="qword">${promptWord}</div>
+    <div class="qinfo">${promptInfo}</div>
+    <div class="qattempt" id="attemptLbl"></div>
+    <div class="answer-wrap">
+      <input type="text" class="answer" id="answerInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type your answer and press Enter">
+    </div>
+    <div class="banner" id="banner"></div>
+    <div class="controls">
+      <div class="left">
+        <button class="btn primary" id="submitBtn" onclick="submitTypeIn()">Check</button>
+        ${diffBtn}
+      </div>
+      <button class="btn primary" id="nextBtn" style="display:none;" onclick="nextQuestion()">Next →</button>
+    </div>`;
+  const inp=document.getElementById('answerInput');
+  inp.focus();
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); if(S.answered) nextQuestion(); else submitTypeIn(); }
+  });
+  startTimer();
+}
+
+function renderMC(w,diffBtn){
+  // build 4 options: correct primary meaning + 3 distractors from pool (same direction lat->en options as primary meanings)
+  const correct=primaryMeaning(w.english);
+  const others=shuffle(S.poolWords.filter(x=>x.latin!==w.latin))
+    .map(x=>primaryMeaning(x.english))
+    .filter(m=>m.toLowerCase()!==correct.toLowerCase());
+  const uniq=[]; const seen=new Set([correct.toLowerCase()]);
+  for(const m of others){ if(!seen.has(m.toLowerCase())){ seen.add(m.toLowerCase()); uniq.push(m); } if(uniq.length>=3) break; }
+  let opts=shuffle([correct,...uniq]);
+  S.mcOpts=opts; S.mcCorrect=correct;
+  const card=document.getElementById('qcard');
+  card.innerHTML=`
+    <div class="qprompt-label">Choose the English · Ch ${w.chapter} · ${w.type}</div>
+    <div class="qword">${w.latin}</div>
+    <div class="qinfo">${w.info||''}</div>
+    <div class="qattempt" id="attemptLbl"></div>
+    <div class="mc-grid" id="mcGrid">
+      ${opts.map((o,i)=>`<button class="mc-opt" data-i="${i}" onclick="pickMC(${i})"><span class="key">${i+1}</span>${o}</button>`).join('')}
+    </div>
+    <div class="banner" id="banner"></div>
+    <div class="controls">
+      <div class="left">
+        <button class="btn" id="tryAgainBtn" style="display:none;" onclick="resetMC()">↺ Try again</button>
+        ${diffBtn}
+      </div>
+      <button class="btn primary" id="nextBtn" style="display:none;" onclick="nextQuestion()">Next →</button>
+    </div>`;
+  setMCFocus(0);
+}
+function setMCFocus(i){
+  const opts=document.querySelectorAll('#mcGrid .mc-opt');
+  if(!opts.length) return;
+  S.mcFocus=(i+opts.length)%opts.length;
+  opts.forEach((o,idx)=>o.classList.toggle('focus',idx===S.mcFocus));
+}
+function resetMC(){
+  document.querySelectorAll('#mcGrid .mc-opt').forEach(o=>{ o.classList.remove('right','wrong','dimmed'); o.disabled=false; });
+  document.getElementById('tryAgainBtn').style.display='none';
+  hideBanner();
+  setMCFocus(0);
+}
+function pickMC(i){
+  if(S.answered) return;
+  const opts=document.querySelectorAll('#mcGrid .mc-opt');
+  // if options currently show feedback (after a wrong pick not reset) ignore
+  if([...opts].some(o=>o.classList.contains('wrong'))) {
+    // user must press try again first — but allow clicking the green to count as retry per spec
+  }
+  const chosen=opts[i];
+  const isCorrect=S.mcOpts[i].toLowerCase()===S.mcCorrect.toLowerCase();
+  if(isCorrect){
+    // correct (could be first attempt or a retry)
+    opts.forEach(o=>o.disabled=true);
+    chosen.classList.remove('wrong','dimmed'); chosen.classList.add('right','correct-pulse');
+    document.getElementById('tryAgainBtn').style.display='none';
+    onCorrect();
+  } else {
+    // wrong
+    S.attempts++; S.hadWrong=true;
+    chosen.classList.add('wrong','shake');
+    setTimeout(()=>chosen.classList.remove('shake'),400);
+    opts.forEach((o,idx)=>{
+      if(S.mcOpts[idx].toLowerCase()===S.mcCorrect.toLowerCase()) o.classList.add('right');
+      else if(idx!==i) o.classList.add('dimmed');
+      o.disabled=true;
+    });
+    document.getElementById('tryAgainBtn').style.display='inline-block';
+    onWrong(false);
+  }
+}
+
+async function submitTypeIn(){
+  if(S.answered || S.checking) return;
+  const inp=document.getElementById('answerInput');
+  const val=inp.value;
+  if(normalize(val)===''){ return; }
+  const w=curWord();
+  const dir=S.mode;
+  // fast path: exact / known-variant match
+  if(checkAnswer(val,w,dir)){
+    acceptTypeIn(inp);
+    return;
+  }
+  // instant local judgement of near-misses (no network round-trip)
+  if(fuzzyAccept(val,w,dir,S.poolWords)){
+    acceptTypeIn(inp,'Close enough — accepted.');
+    return;
+  }
+  // smart path: let the AI marker decide whether it's close enough
+  if(S.ai){
+    clearTimer();
+    S.checking=true;
+    const sb=document.getElementById('submitBtn');
+    if(sb){ sb.disabled=true; sb.textContent='Checking…'; }
+    showBanner('ai','<span class="ai-tag">Marker</span><span class="thinking">considering your answer<span class="dot"></span><span class="dot"></span><span class="dot"></span></span>');
+    const verdict=await aiJudge(val,w,dir);
+    S.checking=false;
+    if(sb){ sb.disabled=false; sb.textContent='Check'; }
+    if(verdict && verdict.accept){
+      acceptTypeIn(inp, verdict.reason);
+      return;
+    }
+    rejectTypeIn(inp,val,verdict?verdict.reason:null);
+    return;
+  }
+  rejectTypeIn(inp,val);
+}
+
+/* accept a typed answer (exact or AI-approved) */
+function acceptTypeIn(inp,note){
+  inp.classList.remove('wrong'); inp.classList.add('right','correct-pulse');
+  inp.disabled=true;
+  const sb=document.getElementById('submitBtn'); if(sb) sb.disabled=true;
+  onCorrect(note);
+}
+/* reject a typed answer */
+function rejectTypeIn(inp,val,aiReason){
+  S.attempts++; S.hadWrong=true;
+  inp.classList.add('wrong','shake');
+  setTimeout(()=>inp.classList.remove('shake'),400);
+  onWrong(true,val,aiReason);
+  setTimeout(()=>{ if(!S.answered){ inp.value=''; inp.classList.remove('wrong'); inp.focus(); } },1400);
+}
+
+/* ===== AI MARKER ============================================
+   Asks Claude to judge a non-exact answer: accept reasonable
+   synonyms, typos and alternate valid translations; reject
+   answers that mean something else. Falls back to "reject"
+   if the request fails, so the app still works offline.        */
+async function aiJudge(answer,w,dir){
+  const task = dir==='en-lat' ? 'give the Latin dictionary form' : 'translate the Latin into English';
+  const correct = dir==='en-lat' ? w.latin : w.english;
+  const prompt =
+`Check whether a "De Romanis" Latin vocab answer is just a MISSPELLING of the correct answer.
+Correct answer(s): ${correct}.
+Task: student had to ${task}. Their answer: "${answer}".
+Accept ONLY if the answer is clearly the SAME word(s) as a correct answer but mistyped/misspelled (typos, swapped or missing letters, missing macrons/case). 
+Reject if it is a different word, a synonym, a paraphrase, a related-but-different meaning, or blank — even if the meaning is close.
+Reply ONLY JSON, no other text: {"accept":true|false,"reason":"<=8 words"}`;
+
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:80,
+        messages:[{role:"user",content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    const clean=text.replace(/```json|```/g,'').trim();
+    const obj=JSON.parse(clean);
+    return {accept:!!obj.accept, reason:(obj.reason||'').toString().slice(0,140)};
+  }catch(e){
+    return null; // network/parse failure -> treat as not accepted, no reason
+  }
+}
+
+function flipCard(){
+  const f=document.getElementById('flash');
+  if(!f) return;
+  f.classList.toggle('flipped');
+  if(f.classList.contains('flipped')) document.getElementById('flashBtns').style.display='flex';
+}
+function flashResult(knew){
+  if(S.answered && knew) return;
+  clearTimer();
+  const w=curWord();
+  document.getElementById('flashBtns').style.display='none';
+  if(knew){
+    S.total++; S.correct++; S.streak++; S.streakHigh=Math.max(S.streakHigh,S.streak);
+    recordCleanCorrect(w);
+    showBanner('ok','✓ Knew it!');
+    finishCorrectUI();
+  } else {
+    S.total++; S.streak=0;
+    S.attempts=1; S.hadWrong=true;
+    recordMiss(w);
+    logRecord(w,false);
+    showBanner('bad','✗ Review: <b>'+w.latin+'</b> = '+w.english);
+    // flashcards: still no auto-advance; allow them to mark again or move on
+    S.answered=true;
+    document.getElementById('nextBtn').style.display='inline-block';
+    document.getElementById('nextBtn').focus();
+  }
+  updateQuizStats();
+}
+
+/* shared correct handler for type-in & mc */
+function onCorrect(note){
+  clearTimer();
+  const w=curWord();
+  S.total++; S.correct++; S.streak++; S.streakHigh=Math.max(S.streakHigh,S.streak);
+  S.times.push((Date.now()-S.qStart)/1000);
+  // mastery: clean correct = no wrong attempts this encounter
+  if(!S.hadWrong) recordCleanCorrect(w);
+  else {
+    // had wrong attempts: add to mistake bank (already recorded miss), reset consecutive handled on miss
+    logRecord(w,true);
+  }
+  const noteHtml = note ? ' <span style="font-weight:400;font-style:italic">— '+note+'</span>' : '';
+  const tot=S.attempts+1;
+  if(S.hadWrong){
+    showBanner('ok','✓ Got it — took '+tot+' attempt'+(tot>1?'s':'')+'.'+noteHtml);
+    if(S.record[w.latin]) S.record[w.latin].gotRight=true;
+  } else if(note){
+    showBanner('ok','<span class="ai-tag">Accepted</span>✓ '+note);
+  } else {
+    showBanner('ok','✓ Correct!');
+  }
+  dingCorrect();
+  finishCorrectUI();
+}
+function finishCorrectUI(){
+  S.answered=true;
+  const nb=document.getElementById('nextBtn');
+  nb.style.display='inline-block';
+  nb.focus();
+  // auto-advance on a correct answer (not for self-marked flashcards)
+  if(S.mode!=='flash'){
+    clearTimeout(S.autoAdv);
+    S.autoAdv=setTimeout(()=>{ if(S.answered && !S._adv) nextQuestion(); }, 450);
+  }
+}
+
+/* shared wrong handler */
+function onWrong(isTypeIn,typed,aiReason){
+  buzzWrong();
+  S.streak=0;
+  updateQuizStats();
+  const w=curWord();
+  recordMiss(w);
+  logRecord(w,false,typed);
+  // attempt label
+  const al=document.getElementById('attemptLbl');
+  if(al) al.textContent='Attempt '+(S.attempts+1);
+  const ans=(S.mode==='en-lat')?w.latin:w.english;
+  if(aiReason){
+    showBanner('bad','<span class="ai-tag">Marker</span>✗ '+aiReason+' &nbsp;·&nbsp; answer: <b>'+ans+'</b>');
+    return;
+  }
+  // hint?
+  const hint = (isTypeIn && typed!=null) ? findHint(typed,w,S.poolWords,S.mode) : null;
+  if(hint){
+    showBanner('hint',"Close — that's the word for '"+hint+"'  ·  the answer is: <b>"+ans+"</b>");
+  } else {
+    showBanner('bad','✗ Incorrect — the answer is: <b>'+ans+'</b>');
+  }
+}
+
+function logRecord(w,gotRight,typed){
+  if(!S.record[w.latin]) S.record[w.latin]={word:w,attempts:0,gotRight:false,typed:[]};
+  const r=S.record[w.latin];
+  if(gotRight){ r.gotRight=true; }
+  else { r.attempts++; if(typed) r.typed.push(typed); }
+}
+
+function onTimeout(){
+  if(S.answered) return;
+  const w=curWord();
+  S.attempts++; S.hadWrong=true;
+  S.streak=0; updateQuizStats();
+  recordMiss(w); logRecord(w,false,'(timed out)');
+  const al=document.getElementById('attemptLbl');
+  if(al) al.textContent='Attempt '+(S.attempts+1);
+  buzzWrong();
+  const ans=(S.mode==='en-lat')?w.latin:w.english;
+  showBanner('bad',"Time's up — the answer is: <b>"+ans+"</b>. Try again.");
+  if(S.mode==='lat-en'||S.mode==='en-lat'){
+    const inp=document.getElementById('answerInput');
+    if(inp){ inp.classList.add('wrong','shake'); setTimeout(()=>{inp.classList.remove('shake','wrong'); inp.value=''; inp.focus();},1200); }
+    startTimer(); // restart timer for next attempt — still no auto advance
+  } else if(S.mode==='mc'){
+    // reveal correct, require try-again
+    const opts=document.querySelectorAll('#mcGrid .mc-opt');
+    opts.forEach((o,idx)=>{ if(S.mcOpts[idx].toLowerCase()===S.mcCorrect.toLowerCase()) o.classList.add('right'); else o.classList.add('dimmed'); o.disabled=true; });
+    document.getElementById('tryAgainBtn').style.display='inline-block';
+  }
+}
+
+function nextQuestion(){
+  if(!S.answered || S._adv) return;
+  S._adv=true;
+  clearTimer(); clearTimeout(S.autoAdv);
+  S.idx++;
+  if(S.idx>=S.pool.length){ endSession(); return; }
+  renderQuestion();
+}
+
+function toggleDifficult(){
+  const w=curWord();
+  if(difficult.has(w.latin)){ difficult.delete(w.latin); }
+  else { difficult.add(w.latin); toast('Marked <b>'+w.latin+'</b> as difficult — it will appear more often.'); }
+  save(LS.difficult,[...difficult]);
+  const b=document.getElementById('diffBtn');
+  if(b){ const on=difficult.has(w.latin); b.textContent=on?'★ Marked difficult':'☆ Mark as difficult'; }
+}
+
+function showBanner(type,html){
+  const b=document.getElementById('banner');
+  if(!b) return;
+  const cls = type==='ok'?'ok' : type==='hint'?'hint' : type==='ai'?'ai' : 'bad';
+  b.className='banner feedback-banner show '+cls;
+  b.innerHTML=html;
+  // retrigger animation
+  b.style.animation='none'; void b.offsetWidth; b.style.animation='';
+}
+function hideBanner(){ const b=document.getElementById('banner'); if(b){ b.className='banner'; b.innerHTML=''; } }
+
+function confirmQuit(){
+  clearTimer();
+  endSession();
+}
+
+/* restart the current run from the top with the same words/options */
+function restartSession(){
+  if(!S) return;
+  clearTimer(); clearTimeout(S.autoAdv);
+  S.checking=false;
+  beginSession(S.poolWords, S.mode, S.timer, S.label, S.count);
+  toast('Session restarted.');
+}
+/* restart the mistakes-review round */
+function restartRetry(){
+  if(!M) return;
+  startRetryMistakes();
+  toast('Review round restarted.');
+}
+
+/* ========================================================================
+   END OF SESSION + SUMMARY
+======================================================================== */
+function endSession(){
+  clearTimer(); clearTimeout(S.autoAdv); S._adv=true;
+  const recs=Object.values(S.record);
+  const struggled=recs.filter(r=>r.attempts>0);
+  const needPractice=struggled.filter(r=>r.attempts>=2).length; // 3+ total attempts means 2+ wrong
+  const pct=S.total? Math.round(S.correct/S.total*100):0;
+  const avg=S.times.length? (S.times.reduce((a,b)=>a+b,0)/S.times.length):0;
+
+  // session log
+  sessionLog.push({date:new Date().toISOString(),chapters:S.label,pct,correct:S.correct,total:S.total,needPractice});
+  if(sessionLog.length>40) sessionLog=sessionLog.slice(-40);
+  save(LS.sessions,sessionLog);
+
+  // leaderboard (only meaningful runs)
+  let newEntry=null;
+  if(S.total>=5){
+    newEntry=maybeLeaderboard(pct);
+  }
+  renderLeaderboard(newEntry);
+
+  // build summary view
+  document.getElementById('summarySub').textContent=`${S.label} · ${S.total} questions answered`;
+  document.getElementById('summaryStats').innerHTML=`
+    <div class="big-stat"><div class="n">${pct}%</div><div class="lab">Score (${S.correct}/${S.total})</div></div>
+    <div class="big-stat"><div class="n">${S.streakHigh}</div><div class="lab">Best streak</div></div>
+    <div class="big-stat"><div class="n">${avg.toFixed(1)}s</div><div class="lab">Avg time</div></div>
+    <div class="big-stat"><div class="n">${struggled.length}</div><div class="lab">Words struggled</div></div>`;
+
+  const sb=document.getElementById('summaryStruggle');
+  if(struggled.length===0){
+    sb.innerHTML='<p class="empty">Perfect run — no words struggled with. Optime!</p>';
+  } else {
+    struggled.sort((a,b)=>b.attempts-a.attempts);
+    sb.innerHTML='<table class="report"><tr><th>Latin</th><th>Correct answer</th><th>Total attempts</th><th>Result</th></tr>'+
+      struggled.map(r=>{
+        const totAtt=r.attempts+(r.gotRight?1:0);
+        const needs=totAtt>=3;
+        return `<tr class="${needs?'needs':''}">
+          <td><b>${r.word.latin}</b> <span class="muted">(Ch ${r.word.chapter})</span></td>
+          <td>${r.word.english}</td>
+          <td>${totAtt} ${needs?'<span class="pill np">needs practice</span>':''}</td>
+          <td>${r.gotRight?'<span class="pill ok">got it</span>':'<span class="pill no">not solved</span>'}</td>
+        </tr>`;
+      }).join('')+'</table>';
+  }
+
+  // retry button
+  S.mistakeWords=struggled.map(r=>r.word);
+  document.getElementById('retryMistakesBtn').style.display = S.mistakeWords.length? 'inline-block':'none';
+
+  show('summary');
+  renderMissedPanel();
+}
+
+function maybeLeaderboard(pct){
+  // store; prompt for a name only if it's a top-5 score
+  const min = leaderboard.length>=5? leaderboard[leaderboard.length-1].score : -1;
+  if(leaderboard.length<5 || pct>min){
+    let name=prompt('New high score: '+pct+'%! Enter your name for the leaderboard:','Discipulus');
+    if(name){
+      const entry={name:name.slice(0,18),score:pct,total:S.total,date:new Date().toISOString(),id:S.id};
+      leaderboard.push(entry);
+      leaderboard.sort((a,b)=> b.score-a.score || (a.date<b.date?-1:1));
+      leaderboard=leaderboard.slice(0,5);
+      save(LS.leader,leaderboard);
+      return entry;
+    }
+  }
+  return null;
+}
+function renderLeaderboard(newEntry){
+  const panel=document.getElementById('leaderboardPanel');
+  const body=document.getElementById('leaderboardBody');
+  if(!leaderboard.length){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  const medal=['①','②','③','④','⑤'];
+  body.innerHTML='<table class="report"><tr><th>#</th><th>Name</th><th>Score</th><th>Words</th><th>When</th></tr>'+
+    leaderboard.map((e,i)=>{
+      const isNew = newEntry && e.id===newEntry.id;
+      return `<tr${isNew?' class="needs"':''}>
+        <td style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--gold)">${medal[i]||(i+1)}</td>
+        <td><b>${e.name}</b>${isNew?' <span class="pill np">new</span>':''}</td>
+        <td><b>${e.score}%</b></td>
+        <td class="muted">${e.total||'—'}</td>
+        <td class="muted">${e.date? new Date(e.date).toLocaleDateString():''}</td>
+      </tr>`;
+    }).join('')+'</table>';
+}
+
+function exportCSV(){
+  const recs=Object.values(S.record);
+  let rows=[['Latin','English','Chapter','Type','Attempts','Solved']];
+  recs.forEach(r=>rows.push([r.word.latin,r.word.english,r.word.chapter,r.word.type,r.attempts+(r.gotRight?1:0),r.gotRight?'yes':'no']));
+  // also overall
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='de-romanis-session.csv';
+  a.click();
+}
+
+/* ========================================================================
+   RETRY MISTAKES (mini-quiz) — loop until cleared
+======================================================================== */
+let M=null;
+function startRetryMistakes(){
+  const words=(S && S.mistakeWords)||[];
+  if(words.length===0){ toast('No mistakes to retry!'); return; }
+  M={ queue:words.slice(), cleared:0, total:words.length, cur:null, answered:false, checking:false, ai:(S&&S.ai!=null)?S.ai:aiPref() };
+  show('mistakes');
+  renderRetry();
+}
+function renderRetry(){
+  if(M.queue.length===0){ show('celebrate'); return; }
+  M.cur=M.queue[0]; M.answered=false;
+  document.getElementById('mRemain').textContent=M.queue.length;
+  document.getElementById('mCleared').textContent=M.cleared;
+  document.getElementById('mProgBar').style.width=(M.cleared/M.total*100)+'%';
+  setTopProgress(M.cleared/M.total*100);
+  const w=M.cur;
+  const card=document.getElementById('mcard');
+  card.innerHTML=`
+    <div class="qprompt-label">Retry mistake · Ch ${w.chapter} · ${w.type}</div>
+    <div class="qword">${w.latin}</div>
+    <div class="qinfo">${w.info||''}</div>
+    <div class="answer-wrap">
+      <input type="text" class="answer" id="mInput" autocomplete="off" spellcheck="false" placeholder="English meaning…">
+    </div>
+    <div class="banner" id="banner"></div>
+    <div class="controls">
+      <div class="left"><button class="btn amber" id="mSubmit" onclick="submitRetry()">Check</button></div>
+      <button class="btn amber" id="nextBtn" style="display:none;" onclick="advanceRetry()">Next →</button>
+    </div>`;
+  const inp=document.getElementById('mInput');
+  inp.focus();
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); if(M.answered) advanceRetry(); else submitRetry(); } });
+}
+function retryCorrect(inp,w,note){
+  inp.classList.add('right','correct-pulse'); inp.disabled=true;
+  M.answered=true; M.cleared++;
+  M.queue.shift(); // correct removes the word
+  recordCleanCorrect(w);
+  dingCorrect();
+  showBanner('ok', note ? '<span class="ai-tag">Accepted</span>✓ '+note : '✓ Correct — removed from this round.');
+  const sb=document.getElementById('mSubmit'); if(sb) sb.disabled=true;
+  const nb=document.getElementById('nextBtn'); nb.style.display='inline-block'; nb.focus();
+  document.getElementById('mCleared').textContent=M.cleared;
+}
+function retryWrong(inp,w,aiReason){
+  inp.classList.add('wrong','shake'); setTimeout(()=>inp.classList.remove('shake'),400);
+  buzzWrong();
+  recordMiss(w);
+  // wrong keeps the word — move it to the back of the queue
+  M.queue.push(M.queue.shift());
+  showBanner('bad', (aiReason?'<span class="ai-tag">Marker</span>✗ '+aiReason+' &nbsp;·&nbsp; answer: ':'✗ Incorrect — the answer is: ')+'<b>'+w.english+'</b>. Kept for another go.');
+  setTimeout(()=>{ if(!M.answered){ inp.value=''; inp.classList.remove('wrong'); } renderRetry(); },1500);
+}
+async function submitRetry(){
+  if(M.answered || M.checking) return;
+  const inp=document.getElementById('mInput');
+  const w=M.cur;
+  if(normalize(inp.value)==='') return;
+  if(checkAnswer(inp.value,w,'lat-en')){
+    retryCorrect(inp,w);
+    return;
+  }
+  if(fuzzyAccept(inp.value,w,'lat-en',WORDS)){
+    retryCorrect(inp,w,'Close enough — accepted.');
+    return;
+  }
+  if(M.ai){
+    M.checking=true;
+    const sb=document.getElementById('mSubmit');
+    if(sb){ sb.disabled=true; sb.textContent='Checking…'; }
+    showBanner('ai','<span class="ai-tag">Marker</span><span class="thinking">considering your answer<span class="dot"></span><span class="dot"></span><span class="dot"></span></span>');
+    const verdict=await aiJudge(inp.value,w,'lat-en');
+    M.checking=false;
+    if(sb){ sb.disabled=false; sb.textContent='Check'; }
+    if(verdict && verdict.accept){ retryCorrect(inp,w,verdict.reason); return; }
+    retryWrong(inp,w,verdict?verdict.reason:null);
+    return;
+  }
+  retryWrong(inp,w);
+}
+function advanceRetry(){
+  if(!M.answered) return;
+  renderRetry();
+  renderMissedPanel();
+}
+
+/* ========================================================================
+   MISTAKE BANK
+======================================================================== */
+let bankSort='errors';
+function setBankSort(s){ bankSort=s; renderBank(); }
+function renderBank(){
+  const body=document.getElementById('bankBody');
+  let list=Object.values(missedHist);
+  if(list.length===0){ body.innerHTML='<p class="empty">No mistakes recorded yet. Take a quiz — any words you miss appear here.</p>'; document.getElementById('bankDrillBtn').disabled=true; return; }
+  document.getElementById('bankDrillBtn').disabled=false;
+  if(bankSort==='errors') list.sort((a,b)=>b.timesMissed-a.timesMissed);
+  else list.sort((a,b)=>(b.lastMissed||'').localeCompare(a.lastMissed||''));
+  body.innerHTML='<table class="report"><tr>'+
+    `<th onclick="setBankSort('errors')">Latin</th><th>English</th><th>Chapter</th>`+
+    `<th onclick="setBankSort('errors')">Times missed</th><th>Progress to mastery</th><th onclick="setBankSort('seen')">Last seen</th></tr>`+
+    list.map(m=>`<tr>
+      <td><b>${m.latin}</b></td>
+      <td>${m.english}</td>
+      <td>${m.chapter}</td>
+      <td><span class="pill np">${m.timesMissed}</span></td>
+      <td style="color:var(--good)">${'●'.repeat(m.consecutive||0)}${'○'.repeat(3-(m.consecutive||0))} <span class="muted">${m.consecutive||0}/3</span></td>
+      <td class="muted">${m.lastMissed? new Date(m.lastMissed).toLocaleDateString():''}</td>
+    </tr>`).join('')+'</table>';
+}
+
+/* ========================================================================
+   GLOBAL KEYBOARD (MC navigation + advance)
+======================================================================== */
+document.addEventListener('keydown',e=>{
+  const quizActive=document.getElementById('view-quiz').classList.contains('active');
+  if(!quizActive || !S) return;
+  if(S.mode==='mc'){
+    const opts=document.querySelectorAll('#mcGrid .mc-opt');
+    if(!opts.length) return;
+    if(!S.answered){
+      if(e.key==='ArrowRight'||e.key==='ArrowDown'){ e.preventDefault(); setMCFocus(S.mcFocus+1); }
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); setMCFocus(S.mcFocus-1); }
+      else if(e.key==='Enter'||e.key===' '){ e.preventDefault(); if(!opts[S.mcFocus].disabled) pickMC(S.mcFocus); }
+      else if(/^[1-4]$/.test(e.key)){ const i=+e.key-1; if(opts[i]&&!opts[i].disabled){ setMCFocus(i); pickMC(i); } }
+    } else {
+      if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'){ e.preventDefault(); nextQuestion(); }
+    }
+  } else {
+    // type-in / flash: advance when answered
+    if(S.answered && (e.key===' '||e.key==='ArrowRight')){
+      if(document.activeElement && document.activeElement.tagName==='INPUT' && e.key===' ') return;
+      e.preventDefault(); nextQuestion();
+    }
+  }
+});
+
+/* ========================================================================
+   INIT
+======================================================================== */
+renderHome();
+</script>
+</body>
+</html>
